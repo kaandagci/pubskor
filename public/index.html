@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0c10">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pub Skor">
+    <title>Pub Skor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --glass-bg: rgba(30, 41, 59, 0.7); --glass-border: rgba(255, 255, 255, 0.1); --amber: #f59e0b; }
+        * { -webkit-tap-highlight-color: transparent; }
+        html { scroll-padding-top: 90px; }
+        body {
+            background: radial-gradient(1100px 480px at 50% -12%, rgba(245,158,11,.09), transparent 62%), #0a0c10;
+            background-attachment: fixed;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+        :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 16px; }
+
+        /* Inputs (16px = iOS zoom yok) */
+        input, textarea, select { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px; padding: 12px; outline: none; width: 100%; font-size: 16px; transition: border-color .2s; }
+        input:focus, textarea:focus, select:focus { border-color: var(--amber); }
+        input::placeholder, textarea::placeholder { color: #64748b; }
+        input[type=file] { padding: 8px; font-size: 14px; }
+        select { width: auto; }
+
+        /* Buttons */
+        .btn-primary, .btn-ghost, .btn-danger, .btn-outline, .btn-sm { border-radius: 10px; font-weight: 700; cursor: pointer; transition: transform .1s, opacity .2s, background .2s; }
+        .btn-primary { background: var(--amber); color: #000; padding: 10px 16px; }
+        .btn-danger { background: #e11d48; color: #fff; padding: 10px 16px; }
+        .btn-ghost { color: #cbd5e1; padding: 10px 16px; font-weight: 500; }
+        .btn-outline { border: 1px solid currentColor; padding: 6px 10px; font-size: 12px; flex-shrink: 0; font-weight: 600; }
+        .btn-sm { font-size: 12px; padding: 8px 12px; color: #fff; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
+        .btn-primary:active, .btn-danger:active, .btn-sm:active, .btn-outline:active { transform: scale(.96); }
+
+        /* Score buttons */
+        .score-btn { height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; font-size: 15px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; cursor: pointer; transition: background .15s, color .15s, transform .1s; }
+        .score-btn:hover { border-color: var(--c); color: #fff; }
+        .score-btn:active { transform: scale(.92); }
+        .score-btn[aria-pressed="true"] { background: var(--c); color: #0a0c10; border-color: var(--c); box-shadow: 0 6px 16px -6px var(--c); }
+        .score-row { background: rgba(30,41,59,.5); padding: 10px 12px; border-radius: 12px; margin-bottom: 10px; }
+
+        .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--c); background: rgba(255,255,255,.05); border: 1px solid var(--c); }
+        .chip button { opacity: .7; padding: 2px; } .chip button:hover { opacity: 1; }
+
+        .score-badge { flex-shrink: 0; min-width: 66px; text-align: center; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--c); color: var(--c); background: rgba(255,255,255,.04); }
+        .score-badge span { display: block; font-weight: 900; font-size: 20px; line-height: 1.15; }
+        .score-badge small { font-size: 10px; opacity: .9; }
+
+        /* Accordion (yükseklik sınırı yok) */
+        .acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+        .acc > div { overflow: hidden; min-height: 0; }
+        .acc.open { grid-template-rows: 1fr; }
+
+        .is-ignored { border-style: dashed; }
+        .is-ignored h4, .is-ignored p { opacity: .45; }
+        .pulse { animation: pulse 1.2s ease 1; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); } 30% { box-shadow: 0 0 0 4px rgba(244,63,94,.55); } }
+
+        /* Toast */
+        #toast { position: fixed; top: calc(-100px); left: 50%; transform: translateX(-50%); max-width: 90vw; text-align: center; background: #10b981; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,.35); transition: top .4s cubic-bezier(.68,-.55,.265,1.55); z-index: 1100; }
+        #toast.show { top: calc(env(safe-area-inset-top, 0px) + 16px); }
+        #toast.error { background: #e11d48; } #toast.info { background: #334155; }
+
+        /* Modal */
+        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        #modal-overlay.active { display: flex; animation: fade .2s ease; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Sticky kaydet çubuğu */
+        #savebar { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .btn-save { border-radius: 12px; font-weight: 800; padding: 12px 18px; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; transition: background .2s; }
+        .btn-save.ready { background: #10b981; color: #fff; box-shadow: 0 6px 18px -6px rgba(16,185,129,.7); }
+        .btn-save.locked { background: #1e293b; color: #64748b; }
+
+        /* PDF (id YOK: html2pdf klonu konum/genişlik kurallarını miras almasın) */
+        .pdf-root, .pdf-root * { box-sizing: border-box; }
+        .pdf-root table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+        .pdf-root th, .pdf-root td { border: 1px solid #d9dde3; padding: 6px 8px; font-size: 12px; word-wrap: break-word; overflow-wrap: anywhere; vertical-align: middle; }
+        .pdf-root th { background: #f3f4f6; font-weight: 700; }
+        .pdf-block { page-break-inside: avoid; break-inside: avoid; }
+
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    </style>
+</head>
+<body class="pb-32">
+    <header class="glass-panel sticky top-0 z-40 rounded-none border-t-0 border-l-0 border-r-0 px-4 pb-3 flex justify-between items-center" style="padding-top: calc(env(safe-area-inset-top, 0px) + 12px);">
+        <h1 class="text-xl font-bold text-amber-500 tracking-tight"><i class="fa-solid fa-beer-mug-empty mr-2"></i>Pub Skor</h1>
+        <div class="flex gap-2">
+            <button data-act="dashboard" class="btn-ghost !px-3 !py-2 text-sm"><i class="fa-solid fa-list mr-1"></i>Arşiv</button>
+            <button data-act="new" class="btn-primary !py-2 text-sm shadow-lg shadow-amber-500/20"><i class="fa-solid fa-plus mr-1"></i>Yeni</button>
+        </div>
+    </header>
+
+    <main id="app-container" class="p-4 max-w-2xl mx-auto"></main>
+
+    <div id="savebar" class="fixed bottom-0 inset-x-0 z-40 hidden">
+        <div class="max-w-2xl mx-auto p-3">
+            <div class="glass-panel p-3 flex items-center gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between text-xs text-slate-400 mb-1.5 gap-2"><span id="prog-text" class="truncate"></span><span id="prog-pct"></span></div>
+                    <div class="h-1.5 rounded-full bg-slate-800 overflow-hidden"><div id="prog-fill" class="h-full transition-all" style="width:0"></div></div>
+                </div>
+                <button id="consensus-btn" data-act="save" class="btn-save locked" aria-disabled="true"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="modal-overlay" aria-hidden="true">
+        <div class="glass-panel p-6 w-11/12 max-w-md" id="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+    </div>
+
+<script>
+(function () {
+'use strict';
+
+// ===== 1. ÇEKİRDEK VERİ =====
+const METRICS = [
+    { id: "beer_temp_gas", label: "Bira Sıcaklığı & Gaz Basıncı", icon: "fa-snowflake", weight: 12, hint: "Serin mi, köpük ve gaz dengeli mi?" },
+    { id: "draft_lacing", label: "Fıçı Tazeliği & Lacing", icon: "fa-beer-mug-empty", weight: 12, hint: "Fıçı taze mi, bardakta köpük izi kalıyor mu?" },
+    { id: "service_speed", label: "Servis Hızı & İlgi", icon: "fa-stopwatch", weight: 12, hint: "Sipariş ne kadar hızlı geldi, personel ilgili miydi?" },
+    { id: "price_transparency", label: "Fiyat/Performans & Gizli Ücret", icon: "fa-tag", weight: 12, hint: "Fiyatın karşılığını veriyor mu, hesapta sürpriz var mı?" },
+    { id: "acoustics_talk", label: "Akustik & Sohbet", icon: "fa-comments", weight: 10, hint: "Bağırmadan konuşulabiliyor mu?" },
+    { id: "interior_design", label: "İç Mekan & Düzen", icon: "fa-chair", weight: 10, hint: "Oturma düzeni, dekor, masalar arası mesafe." },
+    { id: "ambiance_air", label: "Ambiyans & Havalandırma", icon: "fa-wind", weight: 8, hint: "Işık, müzik, havalandırma ve duman." },
+    { id: "restroom_queue", label: "Tuvalet Sırası & Kapasite", icon: "fa-users", weight: 7, hint: "Sıra bekletiyor mu, kapasite yeterli mi?" },
+    { id: "restroom_hygiene", label: "Tuvalet & Genel Hijyen", icon: "fa-spray-can-sparkles", weight: 7, hint: "Tuvalet ve genel temizlik." },
+    { id: "snacks_food", label: "İkram & Atıştırmalıklar", icon: "fa-bowl-food", weight: 5, hint: "Yanına gelen ikram ve atıştırmalıklar." },
+    { id: "vibe_comfort", label: "Vibe & Sosyal Rahatlık", icon: "fa-face-smile", weight: 5, hint: "Rahat hissettiren bir ortam mı?" }
+]; // ağırlık toplamı = 100
+
+const COLORS = [
+    { hex: "#f59e0b" }, { hex: "#f43f5e" }, { hex: "#3b82f6" },
+    { hex: "#10b981" }, { hex: "#8b5cf6" }, { hex: "#06b6d4" }
+];
+
+const state = {
+    view: 'dashboard', archive: [], currentSession: null, openId: null, query: '', sort: 'date', busy: false,
+    loading: true, loadError: false, lastFetch: 0, saving: false,
+    admin: false, adminKey: (function () { try { return sessionStorage.getItem('pubskor_admin') || ''; } catch (e) { return ''; } })()
+};
+
+// ===== 2. YARDIMCILAR =====
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt1 = (n) => (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1);
+
+const store = {
+    get(k, fb) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+function todayLocal() { // UTC değil, yerel tarih (gece yarısı sonrası yanlış gün hatası düzeltildi)
+    const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+}
+function fmtDate(iso) { if (!iso || iso.indexOf('-') < 0) return iso || ''; const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; }
+
+function tier(score) {
+    if (score == null || isNaN(score)) return { label: '—', hex: '#64748b', dark: '#475569' };
+    if (score >= 8.5) return { label: 'Efsane', hex: '#10b981', dark: '#047857' };
+    if (score >= 7) return { label: 'Çok iyi', hex: '#84cc16', dark: '#4d7c0f' };
+    if (score >= 5.5) return { label: 'İdare eder', hex: '#f59e0b', dark: '#b45309' };
+    if (score >= 4) return { label: 'Zayıf', hex: '#f97316', dark: '#c2410c' };
+    return { label: 'Uğrama', hex: '#f43f5e', dark: '#be123c' };
+}
+
+// ----- API & sahiplik -----
+function randomToken() {
+    const a = new Uint8Array(24); crypto.getRandomValues(a);
+    return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+}
+const tokens = { map: store.get('pubskor_tokens', {}) };
+function saveTokens() { store.set('pubskor_tokens', tokens.map); }
+function canEdit(s) { return state.admin || !!tokens.map[s.id]; }
+
+async function api(method, path, body, ownerId) {
+    const headers = {};
+    if (body !== undefined) headers['content-type'] = 'application/json';
+    if (ownerId && tokens.map[ownerId]) headers['x-owner-token'] = tokens.map[ownerId];
+    if (state.adminKey) headers['x-admin-key'] = state.adminKey;
+    let res;
+    try { res = await fetch(path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, cache: 'no-store' }); }
+    catch (e) { const err = new Error('Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.'); err.network = true; throw err; }
+    let data = null; try { data = await res.json(); } catch (e) {}
+    if (!res.ok) { const err = new Error((data && data.error) || `Hata (${res.status})`); err.status = res.status; throw err; }
+    return data;
+}
+
+async function loadRemote(silent) {
+    if (!silent) { state.loading = true; state.loadError = false; if (state.view === 'dashboard') render(); }
+    try {
+        const data = await api('GET', '/api/visits');
+        state.archive = (data.visits || []).map(v => { const s = normalizeSession(v); s.hasPhoto = !!v.photoUrl; return s; });
+        state.admin = !!data.admin;
+        if (state.adminKey && !state.admin) { state.adminKey = ''; try { sessionStorage.removeItem('pubskor_admin'); } catch (e) {} showToast('Yönetici anahtarı geçersiz', 'error'); }
+        state.loadError = false; state.lastFetch = Date.now();
+        store.set('pubskor_cache', state.archive.map(x => Object.assign({}, x, { photo: null })));
+    } catch (e) {
+        state.loadError = true;
+        if (!silent) showToast(e.message, 'error');
+    }
+    state.loading = false;
+    if (state.view === 'dashboard' && !$('#modal-overlay').classList.contains('active')) {
+        const search = $('#search');
+        if (!(search && document.activeElement === search)) render();
+    }
+}
+
+let toastTimer;
+function showToast(msg, type) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.className = 'show ' + (type || 'success');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ----- Modal -----
+let modalConfirm = null;
+function openModal(o) {
+    const content = $('#modal-content');
+    content.innerHTML = `
+        <h3 id="modal-title" class="text-lg font-bold text-white mb-3">${esc(o.title)}</h3>
+        <div class="text-slate-300 text-sm">${o.body || ''}</div>
+        <div class="flex justify-end gap-3 mt-6">
+            <button data-act="modal-cancel" class="btn-ghost">${esc(o.cancelText || 'İptal')}</button>
+            <button data-act="modal-ok" class="${o.danger ? 'btn-danger' : 'btn-primary'}">${esc(o.confirmText || 'Onayla')}</button>
+        </div>`;
+    modalConfirm = o.onConfirm || null;
+    const ov = $('#modal-overlay');
+    ov.classList.add('active'); ov.setAttribute('aria-hidden', 'false');
+    const inp = $('#modal-input');
+    setTimeout(() => (inp || content.querySelector('[data-act="modal-ok"]')).focus(), 30);
+}
+function closeModal() {
+    const ov = $('#modal-overlay');
+    ov.classList.remove('active'); ov.setAttribute('aria-hidden', 'true');
+    modalConfirm = null;
+}
+
+// ===== 3. OTURUM MANTIĞI =====
+function defaultRoster() {
+    const r = store.get('pubskor_roster', null);
+    const base = (Array.isArray(r) && r.length) ? r : [{ name: 'Kaan', colorIdx: 0 }, { name: 'Suude', colorIdx: 1 }];
+    return base.map((p, i) => ({ id: 'p' + i, name: p.name, colorIdx: p.colorIdx }));
+}
+
+function normalizeSession(raw) {
+    const s = (raw && typeof raw === 'object') ? raw : {};
+    s.id = String(s.id || ('pub_' + Date.now()));
+    s.name = String(s.name || ''); s.location = String(s.location || '');
+    s.date = s.date || todayLocal(); s.notes = String(s.notes || '');
+    s.photo = (typeof s.photo === 'string' && s.photo.indexOf('data:image/') === 0) ? s.photo : null;
+    s.photoUrl = (typeof s.photoUrl === 'string' && s.photoUrl.indexOf('/api/photo/') === 0) ? s.photoUrl : null;
+    if (!Array.isArray(s.participants) || !s.participants.length) s.participants = defaultRoster();
+    s.participants.forEach((p, i) => {
+        p.id = String(p.id != null ? p.id : 'p' + i);
+        p.name = String(p.name || ('Kişi ' + (i + 1)));
+        p.colorIdx = Number.isInteger(p.colorIdx) ? p.colorIdx % COLORS.length : i % COLORS.length;
+    });
+    s.metrics = (s.metrics && typeof s.metrics === 'object') ? s.metrics : {};
+    METRICS.forEach(m => {
+        const d = (s.metrics[m.id] && typeof s.metrics[m.id] === 'object') ? s.metrics[m.id] : {};
+        d.active = d.active !== false;
+        d.scores = (d.scores && typeof d.scores === 'object') ? d.scores : {};
+        s.metrics[m.id] = d;
+    });
+    s.consensus = (s.consensus == null || s.consensus === '') ? null : Number(s.consensus);
+    return s;
+}
+
+function hasContent(s) {
+    return !!(s && (s.name.trim() || s.location.trim() || s.notes.trim() || s.photo || s.photoUrl ||
+        METRICS.some(m => Object.keys(s.metrics[m.id].scores).length)));
+}
+
+// Tüm hesaplar tek yerde: canlı önizleme, arşiv, PDF ve WhatsApp aynı sonucu kullanır
+function analyze(s) {
+    const n = s.participants.length;
+    let totalW = 0, wSum = 0, filled = 0, needed = 0;
+    const conflicts = [], missingIds = [], metricAvg = {}, pAcc = {};
+    s.participants.forEach(p => pAcc[p.id] = { sum: 0, w: 0 });
+    METRICS.forEach(m => {
+        const d = s.metrics[m.id];
+        if (!d.active) return;
+        totalW += m.weight;
+        const arr = []; let miss = 0;
+        s.participants.forEach(p => {
+            needed++;
+            const v = Number(d.scores[p.id]);
+            if (v >= 1 && v <= 10) { filled++; arr.push({ name: p.name, score: v }); pAcc[p.id].sum += v * m.weight; pAcc[p.id].w += m.weight; }
+            else miss++;
+        });
+        if (miss) missingIds.push(m.id);
+        if (arr.length) {
+            metricAvg[m.id] = arr.reduce((x, y) => x + y.score, 0) / arr.length;
+            if (!miss) wSum += metricAvg[m.id] * m.weight;
+        }
+        if (arr.length > 1) {
+            const mx = Math.max(...arr.map(x => x.score)), mn = Math.min(...arr.map(x => x.score));
+            if (mx - mn >= 2) conflicts.push({ id: m.id, label: m.label, max: mx, min: mn, arr });
+        }
+    });
+    const complete = n > 0 && totalW > 0 && needed > 0 && filled === needed;
+    const perParticipant = {};
+    s.participants.forEach(p => { const a = pAcc[p.id]; perParticipant[p.id] = a.w ? a.sum / a.w : null; });
+    return {
+        complete, filled, needed, missing: needed - filled, missingIds, conflicts, totalW, metricAvg, perParticipant,
+        conflictIds: new Set(conflicts.map(c => c.id)),
+        score: complete ? Math.round(wSum / totalW * 10) / 10 : null // Yoksay durumunda ağırlıklar %100'e normalize edilir
+    };
+}
+
+let draftTimer;
+function queueDraft(now) {
+    clearTimeout(draftTimer);
+    const run = () => { if (state.currentSession) store.set('pubskor_draft', state.currentSession); };
+    if (now) run(); else draftTimer = setTimeout(run, 400);
+}
+
+function guardDraft(proceed) {
+    const cur = state.currentSession;
+    if (cur && hasContent(cur)) {
+        openModal({
+            title: 'Taslağın üzerine yazılsın mı?',
+            body: `“${esc(cur.name || 'İsimsiz mekan')}” için kaydedilmemiş bir taslak var. Devam edersen silinir.`,
+            confirmText: 'Taslağı sil', danger: true, onConfirm: proceed
+        });
+    } else proceed();
+}
+
+function startNewSession() {
+    guardDraft(() => {
+        const s = normalizeSession({ id: 'pub_' + Date.now(), participants: defaultRoster() });
+        s.createdAt = Date.now();
+        state.currentSession = s;
+        queueDraft(true);
+        switchView('session');
+    });
+}
+
+function loadSessionForEdit(id) {
+    const rec = state.archive.find(x => x.id === id);
+    if (!rec) return;
+    if (state.currentSession && state.currentSession.id === id) { switchView('session'); return; }
+    guardDraft(() => {
+        state.currentSession = normalizeSession(JSON.parse(JSON.stringify(rec)));
+        queueDraft(true);
+        switchView('session');
+    });
+}
+
+function discardDraftPrompt() {
+    openModal({
+        title: 'Taslak silinsin mi?', body: 'Kaydedilmemiş puanlar ve notlar kalıcı olarak silinir.',
+        confirmText: 'Sil', danger: true,
+        onConfirm: () => { state.currentSession = null; store.del('pubskor_draft'); render(); showToast('Taslak silindi', 'info'); }
+    });
+}
+
+// ===== 4. RENDER =====
+function switchView(v) {
+    if (v === 'dashboard' && state.currentSession && !hasContent(state.currentSession)) {
+        state.currentSession = null; store.del('pubskor_draft');
+    }
+    state.view = v;
+    render();
+    window.scrollTo(0, 0);
+}
+function renderKeepScroll() { const y = window.scrollY; render(); window.scrollTo(0, y); }
+
+function render() {
+    $('#savebar').classList.toggle('hidden', state.view !== 'session');
+    if (state.view === 'dashboard') renderDashboard(); else renderSession();
+}
+
+// ----- Dashboard -----
+function localLegacy() {
+    if (store.get('pubskor_migrated', false)) return [];
+    const raw = store.get('pubskor_archive', []);
+    return Array.isArray(raw) ? raw.filter(x => x && x.id && x.name) : [];
+}
+
+function renderDashboard() {
+    const c = $('#app-container');
+    const a = state.archive;
+    const draft = state.currentSession;
+    const legacy = localLegacy();
+    const draftCard = (draft && hasContent(draft)) ? `
+        <div class="glass-panel p-4 mb-5 border-amber-500/40 flex items-center gap-3">
+            <i class="fa-solid fa-pen-to-square text-amber-400 text-xl"></i>
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-white truncate">Yarım kalan: ${esc(draft.name || 'İsimsiz mekan')}</div>
+                <div class="text-xs text-slate-400">Kaydedilmemiş taslak</div>
+            </div>
+            <button data-act="resume" class="btn-primary !py-2 text-sm">Devam et</button>
+            <button data-act="discard-draft" class="text-slate-400 px-2" aria-label="Taslağı sil"><i class="fa-solid fa-trash"></i></button>
+        </div>` : '';
+    const legacyCard = legacy.length ? `
+        <div class="glass-panel p-4 mb-5 flex items-center gap-3" style="border-color:rgba(59,130,246,.5)">
+            <i class="fa-solid fa-cloud-arrow-up text-blue-400 text-xl"></i>
+            <div class="flex-1 min-w-0 text-sm"><div class="font-bold text-white">Bu cihazda ${legacy.length} eski kayıt var</div><div class="text-xs text-slate-400">Herkese açık arşive yüklenebilir.</div></div>
+            <button data-act="migrate" class="btn-primary !py-2 text-sm">Yükle</button>
+        </div>` : '';
+
+    let stats = '';
+    if (a.length) {
+        const scored = a.filter(x => x.consensus != null);
+        const avg = scored.length ? scored.reduce((t, x) => t + x.consensus, 0) / scored.length : null;
+        const best = scored.slice().sort((x, y) => y.consensus - x.consensus)[0];
+        stats = `
+        <div class="grid grid-cols-3 gap-3 mb-5">
+            <div class="glass-panel p-3 text-center"><div class="text-2xl font-black text-white">${a.length}</div><div class="text-xs text-slate-400">Ziyaret</div></div>
+            <div class="glass-panel p-3 text-center"><div class="text-2xl font-black text-amber-400">${fmt1(avg)}</div><div class="text-xs text-slate-400">Ortalama</div></div>
+            <div class="glass-panel p-3 text-center min-w-0"><div class="text-2xl font-black" style="color:${tier(best && best.consensus).hex}">${best ? fmt1(best.consensus) : '—'}</div><div class="text-xs text-slate-400 truncate">${best ? esc(best.name || 'İsimsiz') : 'En yüksek'}</div></div>
+        </div>
+        <div class="flex gap-2 mb-4">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                <input id="search" type="search" placeholder="Mekan, konum veya kişi ara" value="${esc(state.query)}" style="padding-left:2.4rem" aria-label="Ara">
+            </div>
+            <select id="sort" aria-label="Sırala">
+                <option value="date" ${state.sort === 'date' ? 'selected' : ''}>Tarih</option>
+                <option value="score" ${state.sort === 'score' ? 'selected' : ''}>Skor</option>
+                <option value="name" ${state.sort === 'name' ? 'selected' : ''}>İsim</option>
+            </select>
+        </div>`;
+    }
+
+    c.innerHTML = `
+        <div class="mb-1 flex items-center justify-between gap-3">
+            <h2 class="text-2xl font-bold text-white">Ortak arşiv</h2>
+            <button data-act="refresh" class="btn-sm bg-slate-700" aria-label="Yenile"><i class="fa-solid fa-rotate ${state.loading ? 'fa-spin' : ''}"></i>Yenile</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-5">Buradaki tüm ziyaretleri herkes görebilir.${state.admin ? ' <span class="text-amber-400 font-semibold">Yönetici modu açık.</span>' : ''}</p>
+        ${state.loadError ? `<div class="glass-panel p-3 mb-4 text-sm text-rose-300" style="border-color:rgba(244,63,94,.5)"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Arşiv yüklenemedi${a.length ? ', son bilinen liste gösteriliyor' : ''}. <button data-act="refresh" class="underline">Tekrar dene</button></div>` : ''}
+        ${draftCard}${legacyCard}${stats}
+        <div id="archive-list" class="space-y-4"></div>
+        <div class="mt-8 flex flex-wrap gap-2 justify-center">
+            <button data-act="backup" class="btn-sm bg-slate-700"><i class="fa-solid fa-download"></i>Yedekle (.json)</button>
+            <button data-act="admin" class="btn-sm bg-slate-800 text-slate-400"><i class="fa-solid fa-user-shield"></i>${state.admin ? 'Yönetici çıkışı' : 'Yönetici'}</button>
+        </div>`;
+    renderList();
+}
+
+const SORTERS = {
+    date: (x, y) => (y.date || '').localeCompare(x.date || '') || (y.createdAt || 0) - (x.createdAt || 0),
+    score: (x, y) => (y.consensus || 0) - (x.consensus || 0),
+    name: (x, y) => x.name.localeCompare(y.name, 'tr')
+};
+
+function renderList() {
+    const box = $('#archive-list'); if (!box) return;
+    if (state.loading && !state.archive.length) {
+        box.innerHTML = `<div class="text-center py-12 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i><p>Arşiv yükleniyor...</p></div>`;
+        return;
+    }
+    if (!state.archive.length) {
+        box.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fa-solid fa-beer-mug-empty text-5xl text-slate-700 mb-4"></i>
+                <p class="text-slate-400 mb-5">Henüz kayıt yok. İlk pub ziyaretini puanla, herkes görebilsin.</p>
+                <button data-act="new" class="btn-primary">İlk ziyareti ekle</button>
+            </div>`;
+        return;
+    }
+    const q = state.query.trim().toLocaleLowerCase('tr');
+    const list = state.archive.filter(s => !q ||
+        (s.name + ' ' + s.location + ' ' + s.notes + ' ' + s.participants.map(p => p.name).join(' ')).toLocaleLowerCase('tr').indexOf(q) >= 0
+    ).sort(SORTERS[state.sort] || SORTERS.date);
+    box.innerHTML = list.length ? list.map(cardHtml).join('') : '<p class="text-slate-500 text-center py-8">Aramayla eşleşen kayıt bulunamadı.</p>';
+}
+
+function cardHtml(s) {
+    const t = tier(s.consensus), a = analyze(s), open = state.openId === s.id, n = s.participants.length;
+    const cols = `grid-template-columns:minmax(0,1fr) repeat(${n},2.4rem)`;
+    const img = s.photoUrl || s.photo, mine = !!tokens.map[s.id], editable = canEdit(s);
+    const rows = METRICS.map(m => {
+        const d = s.metrics[m.id];
+        if (!d.active) return `<div class="flex justify-between text-xs py-1.5 text-slate-600"><span class="line-through">${m.label}</span><span>Yoksayıldı</span></div>`;
+        const conf = a.conflictIds.has(m.id);
+        return `<div class="grid gap-2 text-sm py-1.5 items-center border-b border-slate-800 ${conf ? 'bg-rose-500/10 -mx-2 px-2 rounded' : ''}" style="${cols}">
+            <div class="text-slate-300 truncate" title="${esc(m.label)}">${conf ? '<i class="fa-solid fa-bolt text-rose-400 mr-1"></i>' : ''}${m.label}</div>
+            ${s.participants.map(p => `<div class="text-center font-bold" style="color:${COLORS[p.colorIdx].hex}">${d.scores[p.id] || '-'}</div>`).join('')}
+        </div>`;
+    }).join('');
+
+    return `
+    <article class="glass-panel overflow-hidden">
+        <button class="w-full text-left p-4 flex items-center gap-3" data-act="toggle" data-id="${esc(s.id)}" aria-expanded="${open}">
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-12 h-12 rounded-lg object-cover flex-shrink-0">` : `<div class="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 flex-shrink-0"><i class="fa-solid fa-beer-mug-empty"></i></div>`}
+            <div class="min-w-0 flex-1">
+                <h3 class="font-bold text-lg text-amber-400 truncate">${esc(s.name) || 'İsimsiz mekan'}${mine ? ' <span class="text-[10px] align-middle font-semibold text-emerald-400 border border-emerald-500/50 rounded-full px-2 py-0.5">Senin</span>' : ''}</h3>
+                <p class="text-xs text-slate-400 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${esc(s.location) || 'Konum yok'} &bull; ${fmtDate(s.date)}</p>
+            </div>
+            <div class="score-badge" style="--c:${t.hex}"><span>${fmt1(s.consensus)}</span><small>${t.label}</small></div>
+        </button>
+        <div class="acc ${open ? 'open' : ''}" data-acc="${esc(s.id)}"><div>
+            <div class="px-4 pb-4 pt-3 border-t border-slate-700/50">
+                <div class="flex flex-wrap gap-2 mb-4 justify-end">
+                    ${editable ? `<button data-act="edit" data-id="${esc(s.id)}" class="btn-sm bg-slate-700"><i class="fa-solid fa-pen"></i>Düzenle</button>` : ''}
+                    <button data-act="wa" data-id="${esc(s.id)}" class="btn-sm bg-green-600"><i class="fa-brands fa-whatsapp"></i>WP'a Kopyala</button>
+                    <button data-act="pdf" data-id="${esc(s.id)}" class="btn-sm bg-blue-600"><i class="fa-solid fa-file-pdf"></i>PDF İndir</button>
+                    ${editable ? `<button data-act="delete" data-id="${esc(s.id)}" class="btn-sm bg-rose-600" aria-label="Sil"><i class="fa-solid fa-trash"></i></button>` : ''}
+                </div>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    ${s.participants.map(p => `<span class="chip" style="--c:${COLORS[p.colorIdx].hex}">${esc(p.name)} <b>${fmt1(a.perParticipant[p.id])}</b></span>`).join('')}
+                </div>
+                <div class="grid gap-2 text-xs mb-1 pb-2 border-b border-slate-700 font-bold text-slate-400" style="${cols}">
+                    <div>Kriter</div>
+                    ${s.participants.map(p => `<div class="text-center truncate" style="color:${COLORS[p.colorIdx].hex}">${esc(p.name)}</div>`).join('')}
+                </div>
+                ${rows}
+                ${a.conflicts.length ? `<p class="text-xs text-rose-400 mt-2"><i class="fa-solid fa-bolt mr-1"></i>${a.conflicts.length} kriterde puanlar arasında 2+ fark var.</p>` : ''}
+                ${s.notes ? `<div class="mt-4 text-sm text-slate-300 bg-slate-900/60 rounded-lg p-3 whitespace-pre-wrap break-words">${esc(s.notes)}</div>` : ''}
+                ${img ? `<img src="${esc(img)}" alt="Mekan fotoğrafı" loading="lazy" class="mt-4 rounded-lg border border-slate-700 w-full object-cover max-h-64">` : ''}
+            </div>
+        </div></div>
+    </article>`;
+}
+
+function toggleAccordion(id) {
+    const wasOpen = state.openId === id;
+    state.openId = wasOpen ? null : id;
+    document.querySelectorAll('.acc').forEach(el => el.classList.toggle('open', !wasOpen && el.dataset.acc === id));
+    document.querySelectorAll('[data-act="toggle"]').forEach(b => b.setAttribute('aria-expanded', String(b.dataset.id === state.openId)));
+}
+
+// ----- Oturum ekranı -----
+function scoreRow(m, p, d) {
+    const cur = d.scores[p.id];
+    return `<div class="score-row" data-m="${m.id}" data-p="${esc(p.id)}" style="--c:${COLORS[p.colorIdx].hex}">
+        <div class="text-sm font-semibold mb-2" style="color:var(--c)">${esc(p.name)}</div>
+        <div class="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+            ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => `<button class="score-btn" data-act="score" data-m="${m.id}" data-p="${esc(p.id)}" data-v="${v}" aria-pressed="${cur === v}" aria-label="${esc(p.name)}, ${m.label}: ${v} puan">${v}</button>`).join('')}
+        </div>
+    </div>`;
+}
+
+function metricCard(s, m) {
+    const d = s.metrics[m.id];
+    return `<section id="metric-${m.id}" class="glass-panel p-5 ${d.active ? '' : 'is-ignored'}">
+        <div class="flex justify-between items-start gap-3 ${d.active ? 'mb-4' : ''}">
+            <div class="min-w-0">
+                <h4 class="font-bold text-white"><i class="fa-solid ${m.icon} mr-2 text-slate-400"></i>${m.label}</h4>
+                <p class="text-xs text-slate-500 mt-1">${m.hint} &bull; %${m.weight} ağırlık</p>
+            </div>
+            <button data-act="toggle-metric" data-m="${m.id}" class="btn-outline ${d.active ? 'text-rose-400' : 'text-emerald-400'}">${d.active ? 'Yoksay' : 'Aktifleştir'}</button>
+        </div>
+        ${d.active ? s.participants.map(p => scoreRow(m, p, d)).join('') : ''}
+    </section>`;
+}
+
+function renderSession() {
+    const c = $('#app-container');
+    const s = state.currentSession;
+    if (!s) { state.view = 'dashboard'; return renderDashboard(); }
+    const isEdit = state.archive.some(x => x.id === s.id);
+    const venues = [...new Set(state.archive.map(x => x.name).filter(Boolean))];
+    const locs = [...new Set(state.archive.map(x => x.location).filter(Boolean))];
+
+    c.innerHTML = `
+        <h2 class="text-lg font-bold text-white mb-2">${isEdit ? 'Kaydı düzenle' : 'Yeni ziyaret'}</h2>
+        <p class="text-xs text-slate-500 mb-4"><i class="fa-solid fa-earth-europe mr-1"></i>Kaydettiğinde bu ziyaret (isimler, notlar ve fotoğraf dahil) herkese açık arşivde görünür.</p>
+        <div class="glass-panel p-5 mb-5 space-y-3">
+            <input type="text" id="s-name" data-field="name" list="venue-list" placeholder="Mekan adı" value="${esc(s.name)}" maxlength="80" autocomplete="off" class="!text-xl font-bold" aria-label="Mekan adı">
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="s-loc" data-field="location" list="loc-list" placeholder="Konum" value="${esc(s.location)}" maxlength="80" autocomplete="off" aria-label="Konum">
+                <input type="date" id="s-date" data-field="date" value="${esc(s.date)}" aria-label="Tarih">
+            </div>
+            <datalist id="venue-list">${venues.map(v => `<option value="${esc(v)}">`).join('')}</datalist>
+            <datalist id="loc-list">${locs.map(v => `<option value="${esc(v)}">`).join('')}</datalist>
+        </div>
+
+        <div class="glass-panel p-5 mb-5">
+            <h3 class="text-slate-400 text-sm font-bold mb-3">Masa kadrosu</h3>
+            <div class="flex flex-wrap gap-2 mb-4">
+                ${s.participants.map(p => `<span class="chip" style="--c:${COLORS[p.colorIdx].hex}">${esc(p.name)}<button data-act="rm-participant" data-p="${esc(p.id)}" aria-label="${esc(p.name)} kişisini çıkar"><i class="fa-solid fa-xmark"></i></button></span>`).join('')}
+            </div>
+            <button data-act="add-participant" class="btn-sm border border-slate-700 text-slate-300 hover:text-white"><i class="fa-solid fa-user-plus"></i>Yeni ekle</button>
+        </div>
+
+        <div class="space-y-5 mb-6">${METRICS.map(m => metricCard(s, m)).join('')}</div>
+
+        <div class="glass-panel p-5 mb-5">
+            <h3 class="text-slate-400 text-sm font-bold mb-3">Gözlemler & WhatsApp verisi</h3>
+            <textarea id="s-notes" data-field="notes" rows="4" placeholder="Masadaki genel yorumlar, WhatsApp'tan kopyalanan notlar..." aria-label="Notlar">${esc(s.notes)}</textarea>
+            <button data-act="clean-notes" class="btn-sm bg-indigo-600 mt-3"><i class="fa-solid fa-wand-magic-sparkles"></i>WhatsApp formatını temizle</button>
+        </div>
+
+        <div class="glass-panel p-5 mb-5">
+            <h3 class="text-slate-400 text-sm font-bold mb-3">Mekan fotoğrafı</h3>
+            <input type="file" accept="image/*" data-field="photo" class="text-sm text-slate-400" aria-label="Fotoğraf seç">
+            ${(s.photo || s.photoUrl) ? `<img src="${esc(s.photo || s.photoUrl)}" alt="Seçilen fotoğraf" class="mt-4 rounded-lg border border-slate-700 w-full object-cover max-h-56">
+            <button data-act="remove-photo" class="btn-sm bg-rose-600 mt-3"><i class="fa-solid fa-trash"></i>Fotoğrafı kaldır</button>` : ''}
+        </div>
+
+        <div id="conflict-box" class="glass-panel p-4 mb-5 hidden" style="border-color: rgba(244,63,94,.5)"></div>`;
+    refreshLive();
+}
+
+// Canlı durum: ilerleme çubuğu, kilit, varyans kutusu (tam render gerektirmez)
+function refreshLive() {
+    if (state.view !== 'session' || !state.currentSession) return;
+    const a = analyze(state.currentSession);
+    const btn = $('#consensus-btn'), txt = $('#prog-text'), pct = $('#prog-pct'), fill = $('#prog-fill'), box = $('#conflict-box');
+    const p = a.needed ? Math.round(a.filled / a.needed * 100) : 0;
+    fill.style.width = p + '%';
+    if (a.complete) {
+        const t = tier(a.score);
+        txt.innerHTML = `Konsensüs <b style="color:${t.hex}">${a.score.toFixed(1)} / 10</b> &bull; ${t.label}`;
+        pct.textContent = ''; fill.style.background = t.hex;
+        btn.className = 'btn-save ready'; btn.innerHTML = '<i class="fa-solid fa-check-double"></i>Kaydet';
+        btn.setAttribute('aria-disabled', 'false');
+    } else {
+        txt.textContent = a.totalW === 0 ? 'En az bir kriter aktif olmalı' : `${a.filled} / ${a.needed} puan girildi`;
+        pct.textContent = p + '%'; fill.style.background = '#f59e0b';
+        btn.className = 'btn-save locked'; btn.innerHTML = '<i class="fa-solid fa-lock"></i>Kilitli';
+        btn.setAttribute('aria-disabled', 'true');
+    }
+    if (box) {
+        if (a.conflicts.length) {
+            box.innerHTML = `<div class="text-sm font-semibold text-rose-400 mb-2"><i class="fa-solid fa-bolt mr-1"></i>Masada ayrışan kriterler</div>` +
+                a.conflicts.map(cf => `<div class="text-xs text-slate-300 py-1">${esc(cf.label)}: ${cf.arr.map(x => `${esc(x.name)} <b>${x.score}</b>`).join(' &bull; ')}</div>`).join('');
+            box.classList.remove('hidden');
+        } else box.classList.add('hidden');
+    }
+}
+
+// ===== 5. OLAY YÖNETİCİLERİ =====
+function setScore(mId, pId, score) {
+    const d = state.currentSession.metrics[mId];
+    if (d.scores[pId] === score) delete d.scores[pId]; // aynı puana tekrar dokun = geri al
+    else d.scores[pId] = score;
+    const row = [...document.querySelectorAll('.score-row')].find(r => r.dataset.m === mId && r.dataset.p === pId);
+    if (row) row.querySelectorAll('.score-btn').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.v) === d.scores[pId])));
+    refreshLive(); queueDraft();
+}
+
+function toggleMetric(mId) {
+    const d = state.currentSession.metrics[mId];
+    d.active = !d.active; // puanlar silinmez; tekrar aktifleştirince geri gelir
+    queueDraft(); renderKeepScroll();
+}
+
+function addParticipantPrompt() {
+    openModal({
+        title: 'Yeni katılımcı',
+        body: `<input id="modal-input" type="text" maxlength="20" placeholder="Örn. Ayşe" autocomplete="off" aria-label="Katılımcı adı">`,
+        confirmText: 'Ekle',
+        onConfirm: () => {
+            const name = ($('#modal-input').value || '').trim();
+            const s = state.currentSession;
+            if (!name) { showToast('Bir isim yaz', 'error'); return false; }
+            if (s.participants.some(p => p.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'))) { showToast('Bu isim zaten masada', 'error'); return false; }
+            const used = new Set(s.participants.map(p => p.colorIdx));
+            let ci = COLORS.findIndex((_, i) => !used.has(i));
+            if (ci < 0) ci = s.participants.length % COLORS.length;
+            s.participants.push({ id: 'p_' + Date.now(), name, colorIdx: ci });
+            queueDraft(); renderKeepScroll();
+        }
+    });
+}
+
+function removeParticipant(pId) {
+    const s = state.currentSession;
+    if (s.participants.length <= 1) { showToast('Masada en az bir kişi kalmalı', 'error'); return; }
+    const p = s.participants.find(x => x.id === pId); if (!p) return;
+    const doIt = () => {
+        s.participants = s.participants.filter(x => x.id !== pId);
+        METRICS.forEach(m => delete s.metrics[m.id].scores[pId]);
+        queueDraft(); renderKeepScroll();
+    };
+    if (METRICS.some(m => s.metrics[m.id].scores[pId])) {
+        openModal({ title: `${p.name} çıkarılsın mı?`, body: 'Bu kişinin girdiği puanlar da silinir.', confirmText: 'Çıkar', danger: true, onConfirm: doIt });
+    } else doIt();
+}
+
+function cleanWhatsApp(text) {
+    return text
+        .replace(/[\u200e\u200f\u202a-\u202e]/g, '')
+        .replace(/^[ \t]*\[?\d{1,2}[./]\d{1,2}[./]\d{2,4},?\s+\d{1,2}[:.]\d{2}(?::\d{2})?(?:\s?[APap][Mm])?\]?[ \t]*[-–]?[ \t]*/gm, '')
+        .replace(/<(?:Medya dahil edilmedi|Media omitted|Bu mesaj düzenlendi|This message was edited)>/gi, '')
+        .replace(/[*~]/g, '')
+        .replace(/[“”„]/g, '"').replace(/[‘’]/g, "'")
+        .replace(/[ \t]+/g, ' ').replace(/[ \t]+$/gm, '')
+        .replace(/\n{3,}/g, '\n\n').trim();
+}
+function cleanNLPNotes() {
+    const ta = $('#s-notes'); if (!ta) return;
+    const cleaned = cleanWhatsApp(ta.value);
+    if (cleaned === ta.value) { showToast('Temizlenecek bir şey bulunamadı', 'info'); return; }
+    ta.value = cleaned; state.currentSession.notes = cleaned; queueDraft();
+    showToast('Notlar temizlendi');
+}
+
+function handleImageUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (file.type.indexOf('image/') !== 0) { showToast('Lütfen bir görsel dosyası seç', 'error'); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onerror = () => showToast('Fotoğraf okunamadı', 'error');
+    reader.onload = (ev) => {
+        const img = new Image();
+        img.onerror = () => showToast('Bu fotoğraf biçimi desteklenmiyor', 'error');
+        img.onload = () => {
+            const MAX = 800, k = Math.min(1, MAX / Math.max(img.width, img.height));
+            const w = Math.round(img.width * k), h = Math.round(img.height * k);
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); // şeffaf PNG siyah çıkmasın
+            ctx.drawImage(img, 0, 0, w, h);
+            state.currentSession.photo = canvas.toDataURL('image/jpeg', 0.6); state.currentSession.photoUrl = null;
+            queueDraft(); renderKeepScroll(); showToast('Fotoğraf eklendi');
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+function removePhoto() { state.currentSession.photo = null; state.currentSession.photoUrl = null; queueDraft(); renderKeepScroll(); }
+
+// ===== 6. KAYDET / ARŞİV (ortak arşiv, sunucuda) =====
+function scrollToFirstMissing(a) {
+    const el = a.missingIds.length ? document.getElementById('metric-' + a.missingIds[0]) : null;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
+}
+
+function payloadFrom(s) {
+    return {
+        id: s.id, name: s.name.trim(), location: s.location.trim(), date: s.date, notes: s.notes,
+        participants: s.participants.map(p => ({ id: p.id, name: p.name, colorIdx: p.colorIdx })),
+        metrics: s.metrics,
+        // yeni foto: gönder | mevcut uzak foto: dokunma (undefined) | kaldırıldı: null
+        photo: s.photo ? s.photo : (s.photoUrl ? undefined : null)
+    };
+}
+
+function upsertLocal(rec) {
+    const n = normalizeSession(rec); n.hasPhoto = !!rec.photoUrl;
+    const i = state.archive.findIndex(x => x.id === n.id);
+    if (i >= 0) state.archive[i] = n; else state.archive.unshift(n);
+    store.set('pubskor_cache', state.archive.map(x => Object.assign({}, x, { photo: null })));
+    return n;
+}
+
+async function saveSession() {
+    const s = state.currentSession; if (!s || state.saving) return;
+    const a = analyze(s);
+    if (!s.name.trim()) {
+        showToast('Önce mekan adını yaz', 'error');
+        window.scrollTo({ top: 0, behavior: 'smooth' }); const n = $('#s-name'); if (n) n.focus();
+        return;
+    }
+    if (a.totalW === 0) { showToast('En az bir kriteri aktif bırak', 'error'); return; }
+    if (!a.complete) { showToast(`${a.missing} puan eksik, skor kilitli`, 'error'); scrollToFirstMissing(a); return; }
+
+    const isNew = !state.archive.some(x => x.id === s.id);
+    const btn = $('#consensus-btn');
+    state.saving = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>Kaydediliyor'; 
+    try {
+        let rec;
+        if (isNew) {
+            tokens.map[s.id] = randomToken(); saveTokens();
+            try { rec = await api('POST', '/api/visits', payloadFrom(s), s.id); }
+            catch (e) { delete tokens.map[s.id]; saveTokens(); throw e; }
+        } else {
+            rec = await api('PUT', '/api/visits/' + encodeURIComponent(s.id), payloadFrom(s), s.id);
+        }
+        upsertLocal(rec);
+        store.set('pubskor_roster', s.participants.map(p => ({ name: p.name, colorIdx: p.colorIdx })));
+        clearTimeout(draftTimer); store.del('pubskor_draft');
+        state.currentSession = null; state.openId = rec.id;
+        switchView('dashboard');
+        showToast('Kaydedildi, herkes görebilir!');
+    } catch (e) {
+        showToast(e.message || 'Kaydedilemedi', 'error'); // taslak korunur, tekrar denenebilir
+        refreshLive();
+    }
+    state.saving = false;
+}
+
+function deleteSession(id) {
+    const rec = state.archive.find(x => x.id === id);
+    if (!rec || !canEdit(rec)) return;
+    openModal({
+        title: 'Kaydı sil', body: 'Bu kayıt herkes için kalıcı olarak silinir. Emin misin?', confirmText: 'Sil', danger: true,
+        onConfirm: async () => {
+            try {
+                await api('DELETE', '/api/visits/' + encodeURIComponent(id), undefined, id);
+                state.archive = state.archive.filter(x => x.id !== id);
+                delete tokens.map[id]; saveTokens();
+                if (state.currentSession && state.currentSession.id === id) { state.currentSession = null; store.del('pubskor_draft'); }
+                if (state.openId === id) state.openId = null;
+                store.set('pubskor_cache', state.archive.map(x => Object.assign({}, x, { photo: null })));
+                render(); showToast('Kayıt silindi', 'info');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+    });
+}
+
+// ----- Eski yerel kayıtları ortak arşive taşıma -----
+async function migrateLegacy() {
+    const list = localLegacy();
+    if (!list.length || state.busy) return;
+    state.busy = true; showToast(`${list.length} kayıt yükleniyor...`, 'info');
+    let done = 0, skipped = 0;
+    for (const raw of list) {
+        const s = normalizeSession(JSON.parse(JSON.stringify(raw)));
+        if (!/^pub_[A-Za-z0-9_-]{4,40}$/.test(s.id) || !analyze(s).complete || !s.name.trim()) { skipped++; continue; }
+        if (state.archive.some(x => x.id === s.id)) { done++; continue; }
+        try {
+            tokens.map[s.id] = randomToken(); saveTokens();
+            const rec = await api('POST', '/api/visits', payloadFrom(s), s.id);
+            upsertLocal(rec); done++;
+        } catch (e) {
+            if (e.status === 409) { done++; continue; }
+            if (e.status === 400 && s.photo) { // fotoğraf sınırı aşıldıysa fotoğrafsız yeniden dene
+                try { s.photo = null; const rec2 = await api('POST', '/api/visits', payloadFrom(s), s.id); upsertLocal(rec2); done++; continue; } catch (e2) {}
+            }
+            delete tokens.map[s.id]; saveTokens(); skipped++;
+        }
+    }
+    store.set('pubskor_migrated', true);
+    state.busy = false; render();
+    showToast(`${done} kayıt yüklendi${skipped ? `, ${skipped} atlandı` : ''}`, skipped ? 'info' : 'success');
+}
+
+function adminPrompt() {
+    if (state.admin || state.adminKey) {
+        state.adminKey = ''; state.admin = false;
+        try { sessionStorage.removeItem('pubskor_admin'); } catch (e) {}
+        render(); showToast('Yönetici modundan çıkıldı', 'info'); return;
+    }
+    openModal({
+        title: 'Yönetici girişi',
+        body: `<p class="mb-3 text-xs text-slate-400">Yöneticiler tüm kayıtları düzenleyip silebilir.</p><input id="modal-input" type="password" placeholder="Yönetici anahtarı" autocomplete="off" aria-label="Yönetici anahtarı">`,
+        confirmText: 'Giriş',
+        onConfirm: () => {
+            const key = ($('#modal-input').value || '').trim(); if (!key) return false;
+            state.adminKey = key; try { sessionStorage.setItem('pubskor_admin', key); } catch (e) {}
+            loadRemote(false).then(() => { if (state.admin) showToast('Yönetici modu açık'); });
+        }
+    });
+}
+
+// ----- Yedekleme -----
+function exportBackup() {
+    if (!state.archive.length) { showToast('Yedeklenecek kayıt yok', 'info'); return; }
+    const blob = new Blob([JSON.stringify({ app: 'pubskor', version: 6, exportedAt: new Date().toISOString(), archive: state.archive })], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `pubskor_yedek_${todayLocal()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    showToast('Yedek indirildi');
+}
+
+// ===== 7. DIŞA AKTARIM: WHATSAPP =====
+async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+        try {
+            const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+            document.body.appendChild(ta); ta.focus(); ta.select();
+            const ok = document.execCommand('copy'); ta.remove(); return ok;
+        } catch (e2) { return false; }
+    }
+}
+
+async function exportToWA(id) {
+    const s = state.archive.find(x => x.id === id); if (!s) return;
+    const a = analyze(s), t = tier(s.consensus);
+    let text = `🍺 *${s.name}*${s.location ? ` (${s.location})` : ''}\n📅 *Ziyaret:* ${fmtDate(s.date)}\n⭐ *Konsensüs:* ${fmt1(s.consensus)} / 10 — ${t.label}\n\n👥 *Kadro:*\n`;
+    s.participants.forEach(p => { text += `• ${p.name}: *${fmt1(a.perParticipant[p.id])} / 10*\n`; });
+    text += `\n📊 *Kriterler:*\n`;
+    METRICS.forEach(m => {
+        if (!s.metrics[m.id].active) return;
+        text += `• ${m.label}: ` + s.participants.map(p => `${p.name}: ${s.metrics[m.id].scores[p.id] || '-'}`).join(' | ') + `\n`;
+    });
+    if (a.conflicts.length) text += `\n⚡ *Ayrışan kriterler:* ${a.conflicts.map(c => c.label).join(', ')}\n`;
+    if (s.notes) text += `\n📝 *Notlar:*\n${s.notes}`;
+    const ok = await copyText(text);
+    showToast(ok ? 'Panoya kopyalandı (WP)' : 'Kopyalama başarısız oldu', ok ? 'success' : 'error');
+}
+
+// ===== 8. DIŞA AKTARIM: A4 PDF =====
+// Neden taşıyordu? html2pdf, kaynak elementi klonlar; klon aynı id'yi taşıdığı için
+// "#pdf-render-canvas { left:-9999px; width:794px; padding:20px }" kuralı klonda da geçerli oluyordu.
+// 794px + padding, 190mm (~718px) içerik alanından geniş kalıp sağdan kesiliyordu.
+// Çözüm: id'siz, konumlandırılmamış, içerik alanına tam oturan (718px = 190mm) ayrı bir element.
+function buildPdfElement(s) {
+    const a = analyze(s), t = tier(s.consensus), n = s.participants.length;
+    const W = 718, wW = 54, aW = 50;
+    const P = n <= 5 ? 64 : Math.floor(320 / n);
+    const critW = W - wW - aW - n * P;
+
+    const el = document.createElement('div');
+    el.className = 'pdf-root';
+    el.style.cssText = `width:${W}px;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;`;
+
+    const active = METRICS.filter(m => s.metrics[m.id].active);
+    const ignored = METRICS.filter(m => !s.metrics[m.id].active);
+
+    const rows = active.map(m => {
+        const d = s.metrics[m.id], conf = a.conflictIds.has(m.id);
+        return `<tr style="${conf ? 'background:#fff1f2;' : ''}">
+            <td>${esc(m.label)}</td>
+            <td style="text-align:center;color:#666;">%${m.weight}</td>
+            ${s.participants.map(p => `<td style="text-align:center;font-weight:700;">${d.scores[p.id] || '-'}</td>`).join('')}
+            <td style="text-align:center;font-weight:700;">${fmt1(a.metricAvg[m.id])}</td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+        <table style="margin-bottom:12px;border:none;" class="pdf-block"><tr>
+            <td style="border:none;padding:0 14px 0 0;vertical-align:middle;">
+                <div style="font-size:22px;font-weight:700;color:#92400e;line-height:1.2;">${esc(s.name)}</div>
+                <div style="font-size:12px;color:#555;margin-top:5px;">${esc(s.location) || 'Konum belirtilmedi'} &bull; ${fmtDate(s.date)}</div>
+            </td>
+            <td style="width:120px;border:none;padding:0;vertical-align:middle;">
+                <div style="border:2px solid ${t.dark};border-radius:12px;padding:8px 4px;text-align:center;">
+                    <div style="font-size:30px;font-weight:800;color:${t.dark};line-height:1.05;">${fmt1(s.consensus)}</div>
+                    <div style="font-size:11px;color:#555;margin-top:2px;">/ 10 &bull; ${t.label}</div>
+                </div>
+            </td>
+        </tr></table>
+
+        <div class="pdf-block" style="margin-bottom:12px;font-size:12px;">
+            ${s.participants.map(p => `<span style="display:inline-block;margin:0 8px 4px 0;padding:3px 10px;border:1px solid ${COLORS[p.colorIdx].hex};border-radius:999px;color:#222;">${esc(p.name)} <b>${fmt1(a.perParticipant[p.id])}</b></span>`).join('')}
+        </div>
+
+        <table>
+            <colgroup><col style="width:${critW}px"><col style="width:${wW}px">${s.participants.map(() => `<col style="width:${P}px">`).join('')}<col style="width:${aW}px"></colgroup>
+            <thead><tr>
+                <th>Kriter</th><th style="text-align:center;">Ağ.</th>
+                ${s.participants.map(p => `<th style="text-align:center;font-size:11px;color:${COLORS[p.colorIdx].hex === '#f59e0b' ? '#b45309' : COLORS[p.colorIdx].hex};">${esc(p.name)}</th>`).join('')}
+                <th style="text-align:center;">Ort.</th>
+            </tr></thead>
+            <tbody>${rows}
+                <tr style="background:#f9fafb;">
+                    <td style="font-weight:700;">Genel (ağırlıklı)</td><td></td>
+                    ${s.participants.map(p => `<td style="text-align:center;font-weight:700;">${fmt1(a.perParticipant[p.id])}</td>`).join('')}
+                    <td style="text-align:center;font-weight:800;color:${t.dark};">${fmt1(s.consensus)}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="font-size:10px;color:#777;margin:6px 0 12px;">
+            ${a.conflicts.length ? 'Açık kırmızı satırlar: puanlar arasında 2 veya daha fazla fark var. ' : ''}
+            ${ignored.length ? `Yoksayılan kriterler: ${ignored.map(m => esc(m.label)).join(', ')}. Ağırlıklar aktif kriterlere göre normalize edilmiştir.` : ''}
+        </div>
+
+        ${s.notes ? `<div class="pdf-block" style="margin-bottom:12px;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:5px;">Notlar</div>
+            <div style="font-size:12px;color:#333;background:#f9f9f9;padding:10px;border:1px solid #eee;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;">${esc(s.notes)}</div>
+        </div>` : ''}
+
+        ${s.photo ? `<div class="pdf-block" style="text-align:center;margin-bottom:8px;"><img src="${s.photo}" alt="" style="display:block;margin:0 auto;max-width:100%;max-height:250px;object-fit:contain;border-radius:8px;"></div>` : ''}
+
+        <div style="font-size:10px;color:#999;text-align:right;margin-top:8px;">Pub Skor &bull; ${new Date().toLocaleString('tr-TR')}</div>`;
+    return el;
+}
+
+async function generatePDF(id) {
+    const found = state.archive.find(x => x.id === id); if (!found) return;
+    let s = found;
+    if (typeof html2pdf === 'undefined') { showToast('PDF motoru yüklenemedi. İnternet bağlantını kontrol et.', 'error'); return; }
+    if (state.busy) return;
+    state.busy = true;
+    showToast('PDF hazırlanıyor...', 'info');
+    if (!s.photo && s.photoUrl) { // uzak fotoğrafı gömülü veriye çevir (html2canvas için güvenli)
+        try {
+            const blob = await (await fetch(s.photoUrl)).blob();
+            const dataUrl = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
+            s = Object.assign({}, s, { photo: dataUrl });
+        } catch (e) { /* fotoğrafsız devam */ }
+    }
+
+    const safeName = (s.name || 'pub').replace(/[\\/:*?"<>|]/g, '').trim().replace(/\s+/g, '_') || 'pub';
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `${safeName}_Skor.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794, scrollX: 0, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.pdf-block'] }
+    };
+    html2pdf().set(opt).from(buildPdfElement(s)).save()
+        .then(() => showToast('PDF indirildi!'))
+        .catch(() => showToast('PDF oluşturulamadı', 'error'))
+        .then(() => { state.busy = false; });
+}
+
+// ===== 9. GLOBAL OLAYLAR =====
+const ACTIONS = {
+    dashboard: () => switchView('dashboard'),
+    'new': startNewSession,
+    resume: () => switchView('session'),
+    'discard-draft': discardDraftPrompt,
+    toggle: (el) => toggleAccordion(el.dataset.id),
+    edit: (el) => loadSessionForEdit(el.dataset.id),
+    wa: (el) => exportToWA(el.dataset.id),
+    pdf: (el) => generatePDF(el.dataset.id),
+    'delete': (el) => deleteSession(el.dataset.id),
+    score: (el) => setScore(el.dataset.m, el.dataset.p, Number(el.dataset.v)),
+    'toggle-metric': (el) => toggleMetric(el.dataset.m),
+    'add-participant': addParticipantPrompt,
+    'rm-participant': (el) => removeParticipant(el.dataset.p),
+    'clean-notes': cleanNLPNotes,
+    'remove-photo': removePhoto,
+    save: saveSession,
+    backup: exportBackup,
+    refresh: () => loadRemote(false),
+    migrate: migrateLegacy,
+    admin: adminPrompt,
+    'modal-cancel': closeModal,
+    'modal-ok': () => { const fn = modalConfirm; if (!fn || fn() !== false) closeModal(); }
+};
+
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') { closeModal(); return; }
+    const el = e.target.closest('[data-act]');
+    if (el && ACTIONS[el.dataset.act]) ACTIONS[el.dataset.act](el, e);
+});
+
+document.addEventListener('input', (e) => {
+    const t = e.target, f = t.dataset && t.dataset.field;
+    if (f && f !== 'photo' && state.currentSession) {
+        if (f === 'date' && !t.value) return;
+        state.currentSession[f] = t.value; queueDraft();
+    } else if (t.id === 'search') { state.query = t.value; renderList(); }
+});
+
+document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.dataset && t.dataset.field === 'photo') handleImageUpload(t);
+    else if (t.id === 'sort') { state.sort = t.value; renderList(); }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (!$('#modal-overlay').classList.contains('active')) return;
+    if (e.key === 'Escape') closeModal();
+    else if (e.key === 'Enter' && e.target.id === 'modal-input') { e.preventDefault(); ACTIONS['modal-ok'](); }
+});
+
+// ===== 10. BAŞLAT =====
+(function init() {
+    // Önce son bilinen liste (anında açılır), ardından sunucudan tazelenir
+    const cache = store.get('pubskor_cache', []);
+    state.archive = (Array.isArray(cache) ? cache : []).filter(x => x && x.id).map(x => { const s = normalizeSession(x); s.hasPhoto = !!s.photoUrl; return s; });
+    const draft = store.get('pubskor_draft', null);
+    if (draft && typeof draft === 'object') {
+        const d = normalizeSession(draft);
+        if (hasContent(d)) state.currentSession = d;
+    }
+    render();
+    loadRemote(true);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && state.view === 'dashboard' && Date.now() - state.lastFetch > 30000) loadRemote(true);
+    });
+})();
+
+})();
+</script>
+</body>
+</html>
