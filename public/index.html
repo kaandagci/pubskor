@@ -3,61 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0a0c10">
+    <meta name="theme-color" content="#15110d">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Pub Skor">
     <title>Pub Skor</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%BA%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Sıcak "pub" paleti: Tailwind'in gri/amber tonları kahve-krem tonlarla değiştirildi
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = { theme: { extend: { colors: {
+            white: '#f4ead8',
+            slate: { 50:'#f6f0e6', 100:'#efe6d6', 200:'#e3d6c0', 300:'#cfc0a8', 400:'#a99a84', 500:'#8f816d', 600:'#6b5f4f', 700:'#4a4033', 800:'#352d24', 900:'#241d16', 950:'#17120e' },
+            amber: { 300:'#f0c77a', 400:'#e5b25d', 500:'#d99a3d', 600:'#b97d2b' },
+            emerald: { 400:'#7cc29b', 500:'#5aa982' },
+            rose: { 300:'#eeb0ba', 400:'#e38a99', 500:'#d96b7e', 600:'#b5485a' },
+            blue: { 400:'#8bb6e3', 600:'#4f7fb8' }, indigo: { 600:'#6a62b0' }, green: { 600:'#4d9462' }
+        } } } };
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --glass-bg: rgba(30, 41, 59, 0.7); --glass-border: rgba(255, 255, 255, 0.1); --amber: #f59e0b; }
-        * { -webkit-tap-highlight-color: transparent; }
-        html { scroll-padding-top: 90px; }
+        :root {
+            --bg: #15110d; --surface: rgba(44, 35, 27, .72); --surface-2: rgba(255, 240, 215, .045);
+            --border: rgba(240, 215, 175, .10); --border-strong: rgba(240, 215, 175, .20);
+            --text: #eadfcc; --muted: #a99a84; --faint: #8f816d;
+            --accent: #e0a247; --accent-hi: #f0c77a; --accent-ink: #2a1b08;
+            --ok: #7cc29b; --err: #e38a99; --radius: 16px;
+            --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+        }
+        * { -webkit-tap-highlight-color: transparent; scrollbar-width: thin; scrollbar-color: #4a4033 transparent; }
+        html { color-scheme: dark; scroll-padding-top: 84px; }
         body {
-            background: radial-gradient(1100px 480px at 50% -12%, rgba(245,158,11,.09), transparent 62%), #0a0c10;
+            background:
+                radial-gradient(900px 420px at 50% -10%, rgba(224, 162, 71, .11), transparent 65%),
+                var(--bg);
             background-attachment: fixed;
-            color: #e2e8f0;
+            color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
         }
-        :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 16px; }
+        ::selection { background: rgba(224, 162, 71, .35); }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        /* Inputs (16px = iOS zoom yok) */
-        input, textarea, select { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px; padding: 12px; outline: none; width: 100%; font-size: 16px; transition: border-color .2s; }
-        input:focus, textarea:focus, select:focus { border-color: var(--amber); }
-        input::placeholder, textarea::placeholder { color: #64748b; }
-        input[type=file] { padding: 8px; font-size: 14px; }
-        select { width: auto; }
+        /* Üst çubuk + marka (sol üstteki logo ana sayfaya döner) */
+        .app-header { position: sticky; top: 0; z-index: 40; background: rgba(21, 17, 13, .84); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); padding-top: env(safe-area-inset-top, 0px); }
+        .app-header-inner { max-width: 42rem; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 4px 4px; margin-left: -4px; border-radius: 14px; cursor: pointer; transition: background .2s; }
+        .brand:hover { background: var(--surface-2); }
+        .brand-mark { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; color: var(--accent-ink); background: linear-gradient(145deg, #f2cb82, #d3923a); box-shadow: 0 4px 14px -4px rgba(224, 162, 71, .55), inset 0 1px 0 rgba(255, 255, 255, .35); transition: transform .25s; }
+        .brand:hover .brand-mark { transform: rotate(-8deg) scale(1.05); }
+        .brand-text { white-space: nowrap; font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: .2px; color: var(--accent-hi); }
 
-        /* Buttons */
-        .btn-primary, .btn-ghost, .btn-danger, .btn-outline, .btn-sm { border-radius: 10px; font-weight: 700; cursor: pointer; transition: transform .1s, opacity .2s, background .2s; }
-        .btn-primary { background: var(--amber); color: #000; padding: 10px 16px; }
-        .btn-danger { background: #e11d48; color: #fff; padding: 10px 16px; }
-        .btn-ghost { color: #cbd5e1; padding: 10px 16px; font-weight: 500; }
-        .btn-outline { border: 1px solid currentColor; padding: 6px 10px; font-size: 12px; flex-shrink: 0; font-weight: 600; }
-        .btn-sm { font-size: 12px; padding: 8px 12px; color: #fff; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
-        .btn-primary:active, .btn-danger:active, .btn-sm:active, .btn-outline:active { transform: scale(.96); }
+        body .glass-panel { background: var(--surface); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 12px 32px -20px rgba(0, 0, 0, .8); }
+        article.glass-panel { transition: border-color .2s, transform .2s; }
+        article.glass-panel:hover { border-color: var(--border-strong); }
 
-        /* Score buttons */
-        .score-btn { height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; font-size: 15px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; cursor: pointer; transition: background .15s, color .15s, transform .1s; }
-        .score-btn:hover { border-color: var(--c); color: #fff; }
+        .page-title { font-family: var(--font-display); font-size: 28px; line-height: 1.2; font-weight: 700; color: var(--text); }
+        .stat-num { font-family: var(--font-display); }
+        .section-label { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+        /* Girişler (16px = iOS zoom yok). "body" öneki Tailwind preflight'ın üstüne yazılmasını engeller */
+        body input, body textarea, body select { background: rgba(14, 10, 7, .55); border: 1px solid var(--border-strong); color: var(--text); border-radius: 12px; padding: 12px 14px; outline: none; width: 100%; font-size: 16px; transition: border-color .2s, box-shadow .2s; }
+        body input:focus, body textarea:focus, body select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(224, 162, 71, .16); }
+        body input::placeholder, body textarea::placeholder { color: var(--faint); }
+        body input[type=file] { padding: 8px; font-size: 14px; }
+        body select { width: auto; padding-right: 10px; }
+
+        /* Düğmeler */
+        .btn-primary, .btn-ghost, .btn-danger, .btn-outline, .btn-sm { border-radius: 12px; font-weight: 700; cursor: pointer; transition: transform .1s, filter .2s, background .2s, opacity .2s; }
+        .btn-primary { background: linear-gradient(180deg, #ecb95c, #d9993a); color: var(--accent-ink); padding: 10px 16px; min-height: 40px; box-shadow: 0 8px 18px -10px rgba(224, 162, 71, .8), inset 0 1px 0 rgba(255, 255, 255, .3); }
+        .btn-primary:hover { filter: brightness(1.07); }
+        .btn-danger { background: #b5485a; color: #fff4f1; padding: 10px 16px; min-height: 40px; }
+        .btn-danger:hover { filter: brightness(1.08); }
+        .btn-ghost { color: var(--text); padding: 10px 14px; font-weight: 600; min-height: 40px; }
+        .btn-ghost:hover { background: var(--surface-2); }
+        .btn-outline { border: 1px solid currentColor; padding: 6px 10px; font-size: 12px; flex-shrink: 0; font-weight: 600; border-radius: 10px; opacity: .9; }
+        .btn-outline:hover { opacity: 1; background: var(--surface-2); }
+        .btn-sm { font-size: 12px; padding: 8px 12px; color: #f6efe2; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; border-radius: 10px; }
+        .btn-sm:hover { filter: brightness(1.1); }
+        .btn-primary:active, .btn-danger:active, .btn-sm:active, .btn-outline:active, .btn-ghost:active { transform: scale(.96); }
+
+        /* Puan düğmeleri */
+        .score-btn { height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; font-size: 15px; background: rgba(255, 240, 215, .05); color: var(--muted); border: 1px solid var(--border); cursor: pointer; transition: background .15s, color .15s, transform .1s, border-color .15s; }
+        .score-btn:hover { border-color: var(--c); color: var(--text); }
         .score-btn:active { transform: scale(.92); }
-        .score-btn[aria-pressed="true"] { background: var(--c); color: #0a0c10; border-color: var(--c); box-shadow: 0 6px 16px -6px var(--c); }
-        .score-row { background: rgba(30,41,59,.5); padding: 10px 12px; border-radius: 12px; margin-bottom: 10px; }
+        .score-btn[aria-pressed="true"] { background: var(--c); color: #1d1408; border-color: var(--c); box-shadow: 0 8px 18px -8px var(--c); }
+        .score-row { background: rgba(255, 240, 215, .035); border: 1px solid var(--border); padding: 12px; border-radius: 14px; margin-bottom: 10px; }
+        .score-row:last-child { margin-bottom: 0; }
 
-        .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--c); background: rgba(255,255,255,.05); border: 1px solid var(--c); }
+        .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--c); background: rgba(255, 240, 215, .05); border: 1px solid var(--c); }
         .chip button { opacity: .7; padding: 2px; } .chip button:hover { opacity: 1; }
 
-        .score-badge { flex-shrink: 0; min-width: 66px; text-align: center; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--c); color: var(--c); background: rgba(255,255,255,.04); }
-        .score-badge span { display: block; font-weight: 900; font-size: 20px; line-height: 1.15; }
-        .score-badge small { font-size: 10px; opacity: .9; }
+        .score-badge { flex-shrink: 0; min-width: 68px; text-align: center; padding: 6px 10px; border-radius: 14px; border: 1px solid var(--c); color: var(--c); background: rgba(255, 240, 215, .04); }
+        .score-badge span { display: block; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15; }
+        .score-badge small { font-size: 10px; opacity: .9; letter-spacing: .02em; }
 
-        /* Accordion (yükseklik sınırı yok) */
+        /* Kriter kartı: tamamlanınca onay işareti */
+        .done-badge { opacity: 0; color: var(--ok); font-size: 17px; transition: opacity .25s; }
+        section.done .done-badge { opacity: 1; }
+        section.done { border-color: rgba(124, 194, 155, .28); }
+
+        .empty-icon { width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 26px; display: grid; place-items: center; font-size: 36px; color: var(--accent-hi); background: radial-gradient(circle at 30% 25%, rgba(224, 162, 71, .22), rgba(224, 162, 71, .05)); border: 1px solid var(--border-strong); }
+
+        /* Akordiyon */
         .acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
         .acc > div { overflow: hidden; min-height: 0; }
         .acc.open { grid-template-rows: 1fr; }
@@ -65,34 +118,42 @@
         .is-ignored { border-style: dashed; }
         .is-ignored h4, .is-ignored p { opacity: .45; }
         .pulse { animation: pulse 1.2s ease 1; }
-        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); } 30% { box-shadow: 0 0 0 4px rgba(244,63,94,.55); } }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(227, 138, 153, 0); } 30% { box-shadow: 0 0 0 4px rgba(227, 138, 153, .5); } }
 
-        /* Toast */
-        #toast { position: fixed; top: calc(-100px); left: 50%; transform: translateX(-50%); max-width: 90vw; text-align: center; background: #10b981; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,.35); transition: top .4s cubic-bezier(.68,-.55,.265,1.55); z-index: 1100; }
+        /* Bildirim */
+        #toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); max-width: 90vw; text-align: center; background: #3f7f63; color: #f2fbf5; padding: 12px 22px; border-radius: 30px; font-weight: 600; font-size: 14px; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .6); transition: top .4s cubic-bezier(.68, -.55, .265, 1.55); z-index: 1100; }
         #toast.show { top: calc(env(safe-area-inset-top, 0px) + 16px); }
-        #toast.error { background: #e11d48; } #toast.info { background: #334155; }
+        #toast.error { background: #a8404f; color: #fff1f2; } #toast.info { background: #4a4033; color: var(--text); }
 
         /* Modal */
-        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        #modal-overlay { position: fixed; inset: 0; background: rgba(10, 7, 4, .72); backdrop-filter: blur(5px); z-index: 1000; display: none; align-items: center; justify-content: center; }
         #modal-overlay.active { display: flex; animation: fade .2s ease; }
+        #modal-overlay .glass-panel { background: #2a2119; }
         @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Sticky kaydet çubuğu */
+        /* Sabit kaydet çubuğu */
         #savebar { padding-bottom: env(safe-area-inset-bottom, 0px); }
-        .btn-save { border-radius: 12px; font-weight: 800; padding: 12px 18px; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; transition: background .2s; }
-        .btn-save.ready { background: #10b981; color: #fff; box-shadow: 0 6px 18px -6px rgba(16,185,129,.7); }
-        .btn-save.locked { background: #1e293b; color: #64748b; }
-
+        .btn-save { border-radius: 12px; font-weight: 800; padding: 12px 18px; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; transition: background .2s, filter .2s; }
+        .btn-save.ready { background: linear-gradient(180deg, #78bf98, #4f9a74); color: #0e2418; box-shadow: 0 10px 22px -10px rgba(120, 191, 152, .8); }
+        .btn-save.ready:hover { filter: brightness(1.06); }
+        .btn-save.locked { background: rgba(255, 240, 215, .06); color: var(--faint); }
 
         @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
     </style>
 </head>
 <body class="pb-32">
-    <header class="glass-panel sticky top-0 z-40 rounded-none border-t-0 border-l-0 border-r-0 px-4 pb-3 flex justify-between items-center" style="padding-top: calc(env(safe-area-inset-top, 0px) + 12px);">
-        <h1 class="text-xl font-bold text-amber-500 tracking-tight"><i class="fa-solid fa-beer-mug-empty mr-2"></i>Pub Skor</h1>
-        <div class="flex gap-2">
-            <button data-act="dashboard" class="btn-ghost !px-3 !py-2 text-sm"><i class="fa-solid fa-list mr-1"></i>Arşiv</button>
-            <button data-act="new" class="btn-primary !py-2 text-sm shadow-lg shadow-amber-500/20"><i class="fa-solid fa-plus mr-1"></i>Yeni</button>
+    <header class="app-header">
+        <div class="app-header-inner">
+            <h1 class="m-0">
+                <button type="button" class="brand" data-act="home" aria-label="Pub Skor, ana sayfaya dön" title="Ana sayfa">
+                    <span class="brand-mark"><i class="fa-solid fa-beer-mug-empty"></i></span>
+                    <span class="brand-text">Pub Skor</span>
+                </button>
+            </h1>
+            <div class="flex gap-2 items-center">
+                <button id="nav-back" data-act="dashboard" class="btn-ghost text-sm hidden whitespace-nowrap"><i class="fa-solid fa-arrow-left mr-1"></i>Arşiv</button>
+                <button id="nav-new" data-act="new" class="btn-primary text-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i>Yeni<span class="hidden sm:inline">&nbsp;ziyaret</span></button>
+            </div>
         </div>
     </header>
 
@@ -139,8 +200,8 @@ const METRICS = [
 ]; // ağırlık toplamı = 100
 
 const COLORS = [
-    { hex: "#f59e0b" }, { hex: "#f43f5e" }, { hex: "#3b82f6" },
-    { hex: "#10b981" }, { hex: "#8b5cf6" }, { hex: "#06b6d4" }
+    { hex: "#e5b25d", dark: "#a8691a" }, { hex: "#e5788c", dark: "#b8445a" }, { hex: "#7fb0e3", dark: "#3f74b0" },
+    { hex: "#79c29c", dark: "#2f8a63" }, { hex: "#ad93dc", dark: "#7a5cb8" }, { hex: "#62c2c9", dark: "#2b8a92" }
 ];
 
 const state = {
@@ -167,12 +228,12 @@ function todayLocal() { // UTC değil, yerel tarih (gece yarısı sonrası yanl�
 function fmtDate(iso) { if (!iso || iso.indexOf('-') < 0) return iso || ''; const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; }
 
 function tier(score) {
-    if (score == null || isNaN(score)) return { label: '—', hex: '#64748b', dark: '#475569' };
-    if (score >= 8.5) return { label: 'Efsane', hex: '#10b981', dark: '#047857' };
-    if (score >= 7) return { label: 'Çok iyi', hex: '#84cc16', dark: '#4d7c0f' };
-    if (score >= 5.5) return { label: 'İdare eder', hex: '#f59e0b', dark: '#b45309' };
-    if (score >= 4) return { label: 'Zayıf', hex: '#f97316', dark: '#c2410c' };
-    return { label: 'Uğrama', hex: '#f43f5e', dark: '#be123c' };
+    if (score == null || isNaN(score)) return { label: '—', hex: '#8f816d', dark: '#6b5f4f' };
+    if (score >= 8.5) return { label: 'Efsane', hex: '#78c29a', dark: '#047857' };
+    if (score >= 7) return { label: 'Çok iyi', hex: '#a9c96c', dark: '#4d7c0f' };
+    if (score >= 5.5) return { label: 'İdare eder', hex: '#e5b25d', dark: '#b45309' };
+    if (score >= 4) return { label: 'Zayıf', hex: '#e58f52', dark: '#c2410c' };
+    return { label: 'Uğrama', hex: '#e0707f', dark: '#be123c' };
 }
 
 // ----- API & sahiplik -----
@@ -370,18 +431,28 @@ function discardDraftPrompt() {
 }
 
 // ===== 4. RENDER =====
-function switchView(v) {
+function switchView(v, fromPop) {
     if (v === 'dashboard' && state.currentSession && !hasContent(state.currentSession)) {
         state.currentSession = null; store.del('pubskor_draft');
     }
     state.view = v;
     render();
     window.scrollTo(0, 0);
+    if (!fromPop && v === 'session') { try { history.pushState({ v: 'session' }, ''); } catch (e) {} } // telefondaki geri tuşu siteden çıkarmasın
 }
+function goDashboard() {
+    if (state.view === 'session' && history.state && history.state.v === 'session') {
+        history.back();
+        setTimeout(() => { if (state.view === 'session') switchView('dashboard', true); }, 200);
+    } else switchView('dashboard', true);
+}
+window.addEventListener('popstate', () => { if (state.view === 'session') switchView('dashboard', true); });
 function renderKeepScroll() { const y = window.scrollY; render(); window.scrollTo(0, y); }
 
 function render() {
     $('#savebar').classList.toggle('hidden', state.view !== 'session');
+    const back = $('#nav-back'); if (back) back.classList.toggle('hidden', state.view !== 'session');
+    const nw = $('#nav-new'); if (nw) nw.classList.toggle('hidden', state.view === 'session');
     if (state.view === 'dashboard') renderDashboard(); else renderSession();
 }
 
@@ -421,9 +492,9 @@ function renderDashboard() {
         const best = scored.slice().sort((x, y) => y.consensus - x.consensus)[0];
         stats = `
         <div class="grid grid-cols-3 gap-3 mb-5">
-            <div class="glass-panel p-3 text-center"><div class="text-2xl font-black text-white">${a.length}</div><div class="text-xs text-slate-400">Ziyaret</div></div>
-            <div class="glass-panel p-3 text-center"><div class="text-2xl font-black text-amber-400">${fmt1(avg)}</div><div class="text-xs text-slate-400">Ortalama</div></div>
-            <div class="glass-panel p-3 text-center min-w-0"><div class="text-2xl font-black" style="color:${tier(best && best.consensus).hex}">${best ? fmt1(best.consensus) : '—'}</div><div class="text-xs text-slate-400 truncate">${best ? esc(best.name || 'İsimsiz') : 'En yüksek'}</div></div>
+            <div class="glass-panel p-3 text-center"><div class="stat-num text-2xl font-bold text-white">${a.length}</div><div class="text-xs text-slate-400">Ziyaret</div></div>
+            <div class="glass-panel p-3 text-center"><div class="stat-num text-2xl font-bold text-amber-400">${fmt1(avg)}</div><div class="text-xs text-slate-400">Ortalama</div></div>
+            <div class="glass-panel p-3 text-center min-w-0"><div class="stat-num text-2xl font-bold" style="color:${tier(best && best.consensus).hex}">${best ? fmt1(best.consensus) : '—'}</div><div class="text-xs text-slate-400 truncate">${best ? esc(best.name || 'İsimsiz') : 'En yüksek'}</div></div>
         </div>
         <div class="flex gap-2 mb-4">
             <div class="relative flex-1">
@@ -440,7 +511,7 @@ function renderDashboard() {
 
     c.innerHTML = `
         <div class="mb-1 flex items-center justify-between gap-3">
-            <h2 class="text-2xl font-bold text-white">Ortak arşiv</h2>
+            <h2 class="page-title">Ortak arşiv</h2>
             <button data-act="refresh" class="btn-sm bg-slate-700" aria-label="Yenile"><i class="fa-solid fa-rotate ${state.loading ? 'fa-spin' : ''}"></i>Yenile</button>
         </div>
         <p class="text-xs text-slate-500 mb-5">Buradaki tüm ziyaretleri herkes görebilir.${state.admin ? ' <span class="text-amber-400 font-semibold">Yönetici modu açık.</span>' : ''}</p>
@@ -469,7 +540,7 @@ function renderList() {
     if (!state.archive.length) {
         box.innerHTML = `
             <div class="text-center py-12">
-                <i class="fa-solid fa-beer-mug-empty text-5xl text-slate-700 mb-4"></i>
+                <div class="empty-icon"><i class="fa-solid fa-beer-mug-empty"></i></div>
                 <p class="text-slate-400 mb-5">Henüz kayıt yok. İlk pub ziyaretini puanla, herkes görebilsin.</p>
                 <button data-act="new" class="btn-primary">İlk ziyareti ekle</button>
             </div>`;
@@ -510,8 +581,8 @@ function cardHtml(s) {
             <div class="px-4 pb-4 pt-3 border-t border-slate-700/50">
                 <div class="flex flex-wrap gap-2 mb-4 justify-end">
                     ${editable ? `<button data-act="edit" data-id="${esc(s.id)}" class="btn-sm bg-slate-700"><i class="fa-solid fa-pen"></i>Düzenle</button>` : ''}
-                    <button data-act="wa" data-id="${esc(s.id)}" class="btn-sm bg-green-600"><i class="fa-brands fa-whatsapp"></i>WP'a Kopyala</button>
-                    <button data-act="pdf" data-id="${esc(s.id)}" class="btn-sm bg-blue-600"><i class="fa-solid fa-file-pdf"></i>PDF İndir</button>
+                    <button data-act="wa" data-id="${esc(s.id)}" class="btn-sm bg-green-600" title="WhatsApp için panoya kopyala"><i class="fa-brands fa-whatsapp"></i>WhatsApp</button>
+                    <button data-act="pdf" data-id="${esc(s.id)}" class="btn-sm bg-blue-600" title="PDF olarak indir"><i class="fa-solid fa-file-pdf"></i>PDF</button>
                     ${editable ? `<button data-act="delete" data-id="${esc(s.id)}" class="btn-sm bg-rose-600" aria-label="Sil"><i class="fa-solid fa-trash"></i></button>` : ''}
                 </div>
                 <div class="flex flex-wrap gap-2 mb-4">
@@ -556,7 +627,10 @@ function metricCard(s, m) {
                 <h4 class="font-bold text-white"><i class="fa-solid ${m.icon} mr-2 text-slate-400"></i>${m.label}</h4>
                 <p class="text-xs text-slate-500 mt-1">${m.hint} &bull; %${m.weight} ağırlık</p>
             </div>
-            <button data-act="toggle-metric" data-m="${m.id}" class="btn-outline ${d.active ? 'text-rose-400' : 'text-emerald-400'}">${d.active ? 'Yoksay' : 'Aktifleştir'}</button>
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <span class="done-badge" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span>
+                <button data-act="toggle-metric" data-m="${m.id}" class="btn-outline ${d.active ? 'text-rose-400' : 'text-emerald-400'}">${d.active ? 'Yoksay' : 'Aktifleştir'}</button>
+            </div>
         </div>
         ${d.active ? s.participants.map(p => scoreRow(m, p, d)).join('') : ''}
     </section>`;
@@ -571,7 +645,7 @@ function renderSession() {
     const locs = [...new Set(state.archive.map(x => x.location).filter(Boolean))];
 
     c.innerHTML = `
-        <h2 class="text-lg font-bold text-white mb-2">${isEdit ? 'Kaydı düzenle' : 'Yeni ziyaret'}</h2>
+        <h2 class="page-title mb-1">${isEdit ? 'Kaydı düzenle' : 'Yeni ziyaret'}</h2>
         <p class="text-xs text-slate-500 mb-4"><i class="fa-solid fa-earth-europe mr-1"></i>Kaydettiğinde bu ziyaret (isimler, notlar ve fotoğraf dahil) herkese açık arşivde görünür.</p>
         <div class="glass-panel p-5 mb-5 space-y-3">
             <input type="text" id="s-name" data-field="name" list="venue-list" placeholder="Mekan adı" value="${esc(s.name)}" maxlength="80" autocomplete="off" class="!text-xl font-bold" aria-label="Mekan adı">
@@ -584,7 +658,7 @@ function renderSession() {
         </div>
 
         <div class="glass-panel p-5 mb-5">
-            <h3 class="text-slate-400 text-sm font-bold mb-3">Masa kadrosu</h3>
+            <h3 class="section-label">Masa kadrosu</h3>
             <div class="flex flex-wrap gap-2 mb-4">
                 ${s.participants.map(p => `<span class="chip" style="--c:${COLORS[p.colorIdx].hex}">${esc(p.name)}<button data-act="rm-participant" data-p="${esc(p.id)}" aria-label="${esc(p.name)} kişisini çıkar"><i class="fa-solid fa-xmark"></i></button></span>`).join('')}
             </div>
@@ -594,13 +668,13 @@ function renderSession() {
         <div class="space-y-5 mb-6">${METRICS.map(m => metricCard(s, m)).join('')}</div>
 
         <div class="glass-panel p-5 mb-5">
-            <h3 class="text-slate-400 text-sm font-bold mb-3">Gözlemler & WhatsApp verisi</h3>
+            <h3 class="section-label">Gözlemler & WhatsApp verisi</h3>
             <textarea id="s-notes" data-field="notes" rows="4" placeholder="Masadaki genel yorumlar, WhatsApp'tan kopyalanan notlar..." aria-label="Notlar">${esc(s.notes)}</textarea>
             <button data-act="clean-notes" class="btn-sm bg-indigo-600 mt-3"><i class="fa-solid fa-wand-magic-sparkles"></i>WhatsApp formatını temizle</button>
         </div>
 
         <div class="glass-panel p-5 mb-5">
-            <h3 class="text-slate-400 text-sm font-bold mb-3">Mekan fotoğrafı</h3>
+            <h3 class="section-label">Mekan fotoğrafı</h3>
             <input type="file" accept="image/*" data-field="photo" class="text-sm text-slate-400" aria-label="Fotoğraf seç">
             ${(s.photo || s.photoUrl) ? `<img src="${esc(s.photo || s.photoUrl)}" alt="Seçilen fotoğraf" class="mt-4 rounded-lg border border-slate-700 w-full object-cover max-h-56">
             <button data-act="remove-photo" class="btn-sm bg-rose-600 mt-3"><i class="fa-solid fa-trash"></i>Fotoğrafı kaldır</button>` : ''}
@@ -625,10 +699,14 @@ function refreshLive() {
         btn.setAttribute('aria-disabled', 'false');
     } else {
         txt.textContent = a.totalW === 0 ? 'En az bir kriter aktif olmalı' : `${a.filled} / ${a.needed} puan girildi`;
-        pct.textContent = p + '%'; fill.style.background = '#f59e0b';
+        pct.textContent = p + '%'; fill.style.background = '#e5b25d';
         btn.className = 'btn-save locked'; btn.innerHTML = '<i class="fa-solid fa-lock"></i>Kilitli';
         btn.setAttribute('aria-disabled', 'true');
     }
+    METRICS.forEach(m => {
+        const el = document.getElementById('metric-' + m.id);
+        if (el) el.classList.toggle('done', state.currentSession.metrics[m.id].active && a.missingIds.indexOf(m.id) < 0);
+    });
     if (box) {
         if (a.conflicts.length) {
             box.innerHTML = `<div class="text-sm font-semibold text-rose-400 mb-2"><i class="fa-solid fa-bolt mr-1"></i>Masada ayrışan kriterler</div>` +
@@ -783,7 +861,7 @@ async function saveSession() {
         store.set('pubskor_roster', s.participants.map(p => ({ name: p.name, colorIdx: p.colorIdx })));
         clearTimeout(draftTimer); store.del('pubskor_draft');
         state.currentSession = null; state.openId = rec.id;
-        switchView('dashboard');
+        goDashboard();
         showToast('Kaydedildi, herkes görebilir!');
     } catch (e) {
         showToast(e.message || 'Kaydedilemedi', 'error'); // taslak korunur, tekrar denenebilir
@@ -959,7 +1037,7 @@ function buildPdf(s, photo) {
         doc.setFont('LS', 'bold'); const aw = doc.getTextWidth(av);
         const w = nw + aw + 3 + 7;
         if (cx + w > M + CW) { cx = M; y += chipH + 2; }
-        doc.setLineWidth(0.3); pdfColor(doc, COLORS[p.colorIdx].hex, 'draw');
+        doc.setLineWidth(0.3); pdfColor(doc, COLORS[p.colorIdx].dark, 'draw');
         doc.roundedRect(cx, y, w, chipH, chipH / 2, chipH / 2, 'S');
         font('normal', 9, '#222222'); doc.text(nm, cx + 3.5, y + chipH / 2, { baseline: 'middle' });
         font('bold', 9, '#222222'); doc.text(av, cx + 3.5 + nw + 3, y + chipH / 2, { baseline: 'middle' });
@@ -986,7 +1064,7 @@ function buildPdf(s, photo) {
             const x = colX[2 + i], nm = pdfSafe(p.name);
             cell(x, y, P, h, '#f3f4f6');
             const sz = fit(nm, P - 1.8, 8.5, 5);
-            font('bold', sz, COLORS[p.colorIdx].hex === '#f59e0b' ? '#b45309' : COLORS[p.colorIdx].hex);
+            font('bold', sz, COLORS[p.colorIdx].dark);
             doc.text(nm, x + P / 2, y + h / 2, { align: 'center', baseline: 'middle' });
         });
         const ax = colX[2 + n];
@@ -1098,7 +1176,12 @@ async function generatePDF(id) {
 
 // ===== 9. GLOBAL OLAYLAR =====
 const ACTIONS = {
-    dashboard: () => switchView('dashboard'),
+    dashboard: () => goDashboard(),
+    home: () => {
+        state.query = '';
+        if (state.view === 'dashboard') { render(); window.scrollTo({ top: 0, behavior: 'smooth' }); } else goDashboard();
+        if (Date.now() - state.lastFetch > 5000) loadRemote(true);
+    },
     'new': startNewSession,
     resume: () => switchView('session'),
     'discard-draft': discardDraftPrompt,
