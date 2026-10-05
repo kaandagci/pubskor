@@ -51,7 +51,8 @@ const NOT_VENUE = new RegExp([
     'metal', 'turşu\\p{L}*', 'rental', 'kiralama', 'company', 'digital', 'dijital', 'energy drink', 'aeropuerto', 'traslado', 'transfer',
     'ofis\\p{L}*', 'office', 'însaat', 'gıda', 'gida', 'yapı', 'yapi', 'çiftli\\p{L}*', 'ciftli\\p{L}*', 'dağ evi', 'dag evi', 'kilise\\p{L}*',
     'church', 'eksarh\\p{L}*', 'pos', 'teknoloji', 'bilişim', 'elektrik\\p{L}*', 'oto', 'tamir\\p{L}*', 'nakliyat', 'lojistik',
-    'kırtasiye', 'eczacı', 'veteriner', 'ajans\\p{L}*', 'agency', 'events?', 'organization'
+    'kırtasiye', 'eczacı', 'veteriner', 'ajans\\p{L}*', 'agency', 'events?', 'organization',
+    'danışman\\p{L}*', 'danisman\\p{L}*', 'consult\\p{L}*', 'mağaza\\p{L}*', 'magaza\\p{L}*', 'store'
 ].map(w).join('|'), 'iu');
 
 /** Balık restoranı: yalnızca restoran/meyhane olanlar (midyeci, balık ekmek, balıkçı dükkânı değil). */

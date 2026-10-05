@@ -6,7 +6,7 @@ import { isScore } from '../../shared/scoring';
 import type { Visit } from '../../shared/types';
 import { fmtDate, fmtMoney, fmtScore } from '../lib/format';
 import { mutate } from '../state/crew';
-import { membersById, pendingIds, snapshot, venueById, visits } from '../state/data';
+import { isOwner, membersById, pendingIds, snapshot, venueById, visits } from '../state/data';
 import { discard } from '../state/outbox';
 import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Avatar } from '../components/Avatar';
@@ -34,7 +34,7 @@ function Photos({ v, name }: { v: Visit; name: string }) {
 
 export async function deleteVisit(v: Visit, after?: () => void) {
     const onServer = !!snapshot.value?.visits.some(x => x.id === v.id);
-    const ok = await confirmSheet({ title: 'Ziyaret silinsin mi?', body: onServer ? 'Ekipteki herkes için silinir. 30 gün içinde geri alınabilir.' : 'Henüz gönderilmemiş bu kayıt bu cihazdan silinir.', confirm: 'Sil', danger: true });
+    const ok = await confirmSheet({ title: 'Ziyaret silinsin mi?', body: onServer ? 'Ekipteki herkes için silinir. 30 gün boyunca yalnızca sen (yönetici) çöp kutusundan geri alabilirsin.' : 'Henüz gönderilmemiş bu kayıt bu cihazdan silinir.', confirm: 'Sil', danger: true });
     if (!ok) return;
     if (pendingIds.value.has(v.id)) await discard(v.id);
     if (!onServer) { after?.(); toast('Ziyaret silindi', 'info'); return; }
@@ -71,7 +71,7 @@ export function VisitDetail() {
                 <a class="menu-item" href={`/ziyaret/${v.id}/duzenle`} onClick={close}><Pencil />Düzenle</a>
                 <button class="menu-item" onClick={() => { close(); openShareSheet(v); }}><Share2 />Paylaş</button>
                 <a class="menu-item" href={`/yeni?mekan=${v.venueId}`} onClick={close}><Plus />Bu mekana yeni ziyaret</a>
-                <button class="menu-item danger" onClick={() => { close(); void deleteVisit(v, () => route('/', true)); }}><Trash2 />Sil</button>
+                {(isOwner.value || pendingIds.value.has(v.id)) && <button class="menu-item danger" onClick={() => { close(); void deleteVisit(v, () => route('/', true)); }}><Trash2 />Sil</button>}
             </div>
         )
     });

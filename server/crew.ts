@@ -190,6 +190,8 @@ function housekeeping(crew: CrewDoc, now: number) {
 }
 
 export function snapshot(crew: CrewDoc, meId: string, now: number): CrewSnapshot {
+    // Silinen ziyaretler (çöp kutusu) yalnızca kurucuya gider; diğer üyeler göremez, geri alamaz
+    const owner = crew.members.some(m => m.id === meId && m.role === 'owner' && !m.removed);
     return {
         id: crew.id,
         name: crew.name,
@@ -199,7 +201,7 @@ export function snapshot(crew: CrewDoc, meId: string, now: number): CrewSnapshot
         me: meId,
         members: crew.members.map(({ tokenHash, userId, ...m }) => m),
         venues: crew.venues,
-        visits: crew.visits,
+        visits: owner ? crew.visits : crew.visits.filter(v => !v.deletedAt),
         tables: crew.tables.filter(t => t.expiresAt > now),
         legacyImported: !!crew.legacyImported,
         shareStats: crew.shareStats !== false
@@ -207,7 +209,7 @@ export function snapshot(crew: CrewDoc, meId: string, now: number): CrewSnapshot
 }
 
 export function requireOwner(member: MemberRecord) {
-    if (member.role !== 'owner') throw new HttpError(403, 'Bu işlem için ekip kurucusu olmalısın');
+    if (member.role !== 'owner') throw new HttpError(403, 'Bunu yalnızca ekibin yöneticisi (kurucu) yapabilir', { code: 'owner_only' });
 }
 
 /** Ekipteki eşleşmemiş misafir isimleri (üyeye bağlanabilir). */

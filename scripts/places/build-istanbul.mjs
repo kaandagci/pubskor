@@ -1,7 +1,8 @@
 // İstanbul mekan kataloğu: Overture Maps verisinden İstanbul'un 39 ilçesindeki alkollü içki servis eden
 // mekanları (bar, pub, meyhane, şarap ve kokteyl barları, gece kulüpleri, alkol servisi olan restoranlar) çıkarır.
 //
-// Kullanım:  npm run places:ist            (en son Overture sürümü)
+// Kullanım:  npm run places:ist                      (en son Overture sürümü, kayıtlı menü kontrolleriyle)
+//            npm run places:ist -- --menus            (+ mekan web sitelerini / menülerini yeniden kontrol et)
 //            npm run places:ist -- 2026-09-23.1
 //
 // İl ve ilçe sınırları Overture "divisions" temasından gelir (OpenStreetMap kaynaklı); mekan, içinde bulunduğu
@@ -13,6 +14,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { DuckDBInstance } from '@duckdb/node-api';
 import { runnerImport } from 'vite';
+import { checkSites, hostOf, siteOf } from './menu-check.mjs';
 
 // Paylaşılan TypeScript modülleri Vite ile yüklenir
 const { module: ist } = await runnerImport('./shared/istanbul.ts');
@@ -20,9 +22,18 @@ const { module: text } = await runnerImport('./shared/text.ts');
 const { module: alc } = await runnerImport('./shared/alcohol.ts');
 const { DISTRICTS, ISTANBUL_BBOX, districtFromText } = ist;
 const { foldKey } = text;
-const { classifyAlcohol } = alc;
+const { classifyAlcohol, isNotVenue } = alc;
 
 const OUT = 'data/places/ist.json';
+const MENU_CACHE = 'data/places/menu-cache.json';
+const args = process.argv.slice(2);
+const CHECK_MENUS = args.includes('--menus');
+
+/** Menü kontrolüne girecek kafe / restoranlar: içki servis etme ihtimali hiç olmayan türler hariç. */
+const NO_ALCOHOL_CATS = new Set(['bakery', 'dessert_shop', 'ice_cream_shop', 'candy_store', 'chocolatier', 'bagel_shop', 'donut_shop',
+    'cupcake_shop', 'delicatessen', 'food_truck_stand', 'food_court', 'smoothie_juice_bar', 'juice_bar', 'fast_food_restaurant',
+    'doner_kebab_restaurant', 'chicken_restaurant', 'sandwich_shop', 'soup_restaurant', 'hookah_bar', 'patisserie', 'halal_restaurant']);
+const CAFE_CATS = new Set(['cafe', 'coffee_shop', 'tea_room', 'non_alcoholic_beverage_venue']);
 
 async function latestRelease() {
     const xml = await (await fetch('https://overturemaps-us-west-2.s3.amazonaws.com/?list-type=2&prefix=release/&delimiter=/')).text();
@@ -102,7 +113,7 @@ const meters = (a, b) => {
 
 // ----- Ana akış -----
 
-const release = process.argv[2] || await latestRelease();
+const release = args.find(a => /^\d{4}-\d{2}-\d{2}/.test(a)) || await latestRelease();
 console.log(`Overture sürümü: ${release}`);
 
 const db = await DuckDBInstance.create(':memory:');
@@ -143,7 +154,50 @@ const res = await con.runAndReadAll(`
 const rows = res.getRowObjects();
 console.log(`${rows.length} aday kayıt il sınırı içinde (${((Date.now() - t0) / 1000).toFixed(1)} sn)`);
 
-const stats = { notAlcohol: 0, lowConfidence: 0, closed: 0, noName: 0, duplicate: 0 };
+// ----- Mekan web sitesi / menü kontrolü -----
+// Site mekanın kendi sitesi mi? Adındaki ayırt edici bir sözcük alan adında geçmeli (ya da tersi).
+// Mağaza, otel zinciri, QR menü platformu gibi başka bir işletmenin sitesine bağlanan kayıtlar böylece ayıklanır.
+const GENERIC = new Set(['restaurant', 'restoran', 'restorant', 'lokanta', 'lokantasi', 'cafe', 'kafe', 'coffee', 'kahve', 'kahvesi', 'bar', 'pub', 'bistro',
+    'meyhane', 'meyhanesi', 'balik', 'et', 'kebap', 'steak', 'burger', 'pizza', 'food', 'yemek', 'mutfak', 'sofra', 'istanbul', 'the', 'and', 've',
+    'house', 'garden', 'park', 'menu', 'qr', 'karekod', 'shop', 'hotel', 'otel', 'club', 'lounge', 'terrace', 'teras', 'roof', 'cafe&restaurant']);
+function siteMatches(name, host) {
+    const h = foldKey(host.replace(/\.(com|net|org|biz|info|co|tr|com\.tr|net\.tr|istanbul|cafe|bar|restaurant|menu|online|site|app|io)$/g, '')).replace(/ /g, '');
+    const n = foldKey(name);
+    const compact = n.replace(/ /g, '');
+    if (compact.length >= 4 && h.includes(compact)) return true;
+    const label = h.split(/[^a-z0-9]/)[0];
+    if (label.length >= 4 && compact.includes(label)) return true;
+    return n.split(' ').some(t => t.length >= 3 && !GENERIC.has(t) && h.includes(t));
+}
+let menuCache = {};
+try { menuCache = JSON.parse(await readFile(MENU_CACHE, 'utf8')); } catch { /* ilk çalıştırma */ }
+const isMenuCandidate = r => (r.confidence ?? 0) >= 0.5 && !NO_ALCOHOL_CATS.has(r.prim ?? '') && !isNotVenue(cleanName(r.name) ?? '')
+    && (r.basic === 'cafe' || r.basic === 'coffee_shop' || r.basic === 'restaurant' || r.basic === 'casual_eatery' || CAFE_CATS.has(r.prim ?? '') || (r.prim ?? '').endsWith('restaurant'));
+if (CHECK_MENUS) {
+    const sites = new Map();
+    for (const r of rows) {
+        const name = cleanName(r.name);
+        if (!name) continue;
+        const relevant = classifyAlcohol({ primary: r.prim ?? null, basic: r.basic ?? null, name }) || isMenuCandidate(r);
+        const site = relevant ? siteOf(r.websites?.items ?? r.websites) : null;
+        const host = site && hostOf(site);
+        if (host && !sites.has(host) && siteMatches(name, host)) sites.set(host, site);
+    }
+    console.log(`Menü kontrolü: ${sites.size} farklı site`);
+    const save = () => writeFile(MENU_CACHE, JSON.stringify(menuCache));
+    const t1 = Date.now();
+    await checkSites(sites, menuCache, {
+        concurrency: 20, save,
+        onProgress: (n, total) => console.log(`  ${n}/${total} site (${Math.round((Date.now() - t1) / 1000)} sn)`)
+    });
+}
+const menuOf = (r, name) => {
+    const s = siteOf(r.websites?.items ?? r.websites);
+    const h = s && hostOf(s);
+    return h && siteMatches(name, h) ? menuCache[h] : null;
+};
+
+const stats = { notAlcohol: 0, lowConfidence: 0, closed: 0, noName: 0, duplicate: 0, menuNo: 0, menuYes: 0 };
 const sources = {};
 const candidates = [];
 for (const r of rows) {
@@ -152,10 +206,23 @@ for (const r of rows) {
     if (!name || name.length < 2) { stats.noName++; continue; }
     const forced = override(name, r.district);
     if (forced === 'deny') { stats.notAlcohol++; continue; }
-    const kind = forced ?? classifyAlcohol({ primary: r.prim ?? null, basic: r.basic ?? null, name });
+    const menu = menuOf(r, name);
+    let kind = forced ?? classifyAlcohol({ primary: r.prim ?? null, basic: r.basic ?? null, name });
+    // Sitesinde "alkolsüz mekan / alkol servisi yok" diyorsa katalogdan çıkar (elle izin verilenler hariç)
+    if (kind && !forced && menu?.a === -1) { stats.menuNo++; continue; }
+    // Zincirin sitesi "şu şubemizde alkol yok" diyorsa yalnızca adı / adresi o yeri anan şube çıkar
+    if (!forced && menu?.nb?.length) {
+        const here = foldKey(`${name} ${r.freeform ?? ''}`);
+        if (menu.nb.some(word => here.includes(foldKey(word)))) { stats.menuNo++; continue; }
+    }
+    // Kendini kafe / restoran olarak listeleyen ama menüsünde içki olan mekan
+    if (!kind && menu?.a === 1 && isMenuCandidate(r)) {
+        kind = CAFE_CATS.has(r.prim ?? '') || r.basic === 'cafe' || r.basic === 'coffee_shop' ? 'bar' : 'restoran';
+        stats.menuYes++;
+    }
     if (!kind) { stats.notAlcohol++; continue; }
     const food = kind === 'restoran' || (r.basic === 'restaurant' || r.basic === 'casual_eatery');
-    if (!forced && (r.confidence ?? 0) < (food ? MIN_CONF.food : MIN_CONF.night)) { stats.lowConfidence++; continue; }
+    if (!forced && menu?.a !== 1 && (r.confidence ?? 0) < (food ? MIN_CONF.food : MIN_CONF.night)) { stats.lowConfidence++; continue; }
     const district = districtFromText(r.district) ?? DISTRICTS.find(d => foldKey(d.name) === foldKey(r.district ?? ''));
     if (!district) { stats.noName++; continue; }
     for (const ds of r.datasets?.items ?? r.datasets ?? []) if (ds !== 'Overture') sources[ds] = (sources[ds] ?? 0) + 1;
@@ -167,7 +234,9 @@ for (const r of rows) {
         district: district.name, address: cleanAddress({ freeform: r.freeform }, district.name),
         phone, web, conf: r.confidence ?? 0,
         // Bilinirlik: güven puanı + iletişim bilgisi (ilçe listelerinde sıralama için, 0-100)
-        q: Math.round(Math.min(1, (r.confidence ?? 0) * 0.7 + (web ? 0.15 : 0) + (phone ? 0.15 : 0)) * 100)
+        q: Math.round(Math.min(1, (r.confidence ?? 0) * 0.7 + (web ? 0.15 : 0) + (phone ? 0.15 : 0) + (menu?.a === 1 ? 0.1 : 0)) * 100),
+        // Doğrulama: 2 = elle onaylı (overrides), 1 = menüsünde içki var (mekanın sitesi), 0 = kategori / ad kuralı
+        v: forced ? 2 : menu?.a === 1 ? 1 : 0
     });
 }
 
@@ -198,7 +267,7 @@ const denyIds = new Set(overrides.deny.filter(x => typeof x === 'string'));
 for (let i = kept.length - 1; i >= 0; i--) if (denyIds.has(kept[i].id)) kept.splice(i, 1);
 kept.sort((a, b) => a.id.localeCompare(b.id));
 
-const FIELDS = ['id', 'name', 'kind', 'lat', 'lng', 'district', 'address', 'phone', 'web', 'cat', 'q'];
+const FIELDS = ['id', 'name', 'kind', 'lat', 'lng', 'district', 'address', 'phone', 'web', 'cat', 'q', 'v'];
 const out = {
     v: 1,
     city: 'ist',

@@ -6,7 +6,7 @@ Arkadaşlarınla gittiğin pub, bar, kokteyl bar, meyhane ve restoranları birli
 
 - **Hesaplar:** E-posta + şifre ya da Google ile giriş (Netlify Identity). Ekipler ve puanlar hesapta; her telefonda aynı. Hesap uygulama içinden silinebilir.
 - **Özel ekipler:** Ekibi kuran kişi davet linki ya da QR ile arkadaşlarını çağırır. Arşivi yalnızca ekip görür.
-- **İstanbul mekan kataloğu:** Overture Maps açık verisinden İstanbul'un 39 ilçesindeki ~3.700 **alkollü içki servis eden** mekan: bar, pub, meyhane, şarap ve kokteyl barları, gece kulüpleri, türkü evleri ve alkol servisi olan restoranlar. Mekanlar gerçek ilçe sınırlarına göre ilçelere atanır. Adla arama, yakındakiler, ilçenin tüm mekanları, mekan sayfası (telefon, web sitesi, "Google Maps'te aç / yol tarifi"). Listede olmayan içki mekanını kullanıcı "topluluk mekanı" olarak ekleyebilir. "Alkol servisi yok / kapandı" bildirimini iki farklı kişi yaparsa mekan önerilerden düşer.
+- **İstanbul mekan kataloğu:** Overture Maps açık verisinden İstanbul'un 39 ilçesindeki ~3.900 **alkollü içki servis eden** mekan: bar, pub, meyhane, şarap ve kokteyl barları, gece kulüpleri, türkü evleri ve alkol servisi olan restoranlar. Mekanlar gerçek ilçe sınırlarına göre ilçelere atanır. Alkol servisi üç kaynaktan doğrulanır: kategori ve ad kuralları, mekanın kendi web sitesindeki menü (en az iki farklı içki türü aranır, tek başına "kokteyl" yetmez; alan adı mekanın adına benzemeyen siteler sayılmaz; kendini kafe gösterip içki servis eden mekanlar da böyle bulunur; sitesinde "alkolsüz" yazanlar, zincirlerde yalnızca belirtilen şube çıkarılır) ve elle istisnalar. Adla arama, yakındakiler, ilçenin tüm mekanları, mekan sayfası (telefon, web sitesi, "Google Maps'te aç / yol tarifi"). Listede olmayan içki mekanını kullanıcı "topluluk mekanı" olarak ekleyebilir. "Alkol servisi yok / kapandı" bildirimini iki farklı kişi yaparsa mekan önerilerden düşer.
 - **Keşfet:** Bugün / bu hafta / bu ay çok gidilen mekanlar; semt, ilçe ve tür filtresi, liste ve harita. Ekiplerin ziyaretlerinden anonim sayılır (en az 3 farklı grup), kurucu katkıyı kapatabilir. Topluluk puanı (son 3 ay).
 - **Canlı masa:** Herkes QR ya da 6 haneli kodla kendi telefonundan katılır. Kör puanlama, ilerleme halkaları, telefonu olmayanın yerine puanlama ve masa kapanınca skorun açılması.
 - **Tek telefon modu:** Telefon elden ele dolaşır. Kriter kriter ilerleyen hızlı puanlama, ardından inceleme tablosu. İnternetsiz de çalışır.
@@ -67,7 +67,9 @@ npm run typecheck
 npm run build        # dist/
 npm run icons        # public/icons/icon.svg → PNG simgeler
 npm run places:ist   # İstanbul kataloğunu Overture'ın son sürümünden yeniden üret (ayda bir)
-                     # Alkol sınıflandırması: shared/alcohol.ts · elle istisnalar: data/places/overrides.json
+npm run places:ist -- --menus   # + mekanların kendi web sitelerindeki menüleri yeniden kontrol et (~20 dk)
+                     # Alkol sınıflandırması: shared/alcohol.ts · menü kontrolü: scripts/places/menu-check.mjs
+                     # Menü sonuçları: data/places/menu-cache.json · elle istisnalar: data/places/overrides.json
 ```
 
 Yerelde eski v7 arşivini içe aktarmayı denemek için `.data/legacy/` klasörüne v7 kayıtlarını `<id>.json` olarak koyabilirsin.

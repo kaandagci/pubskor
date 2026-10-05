@@ -240,6 +240,22 @@ describe('ziyaretler', () => {
         expect(res.data.snapshot.visits[0].deletedAt).toBeNull();
     });
 
+    it('yalnızca yönetici siler ve geri alır; çöp kutusunu yalnızca o görür', async () => {
+        const { tokA, tokB, crew } = await setupCrew();
+        await call('POST', '/api/crew/visits', { token: tokB, body: visitBody('pub_aaaaaaaaaaaa', crew) });
+        const memberDel = await call('DELETE', '/api/crew/visits/pub_aaaaaaaaaaaa', { token: tokB });
+        expect(memberDel.status).toBe(403);
+        expect(memberDel.data.code).toBe('owner_only');
+        expect((await call('DELETE', '/api/crew/visits/pub_aaaaaaaaaaaa', { token: tokA })).status).toBe(200);
+        // Üye silinen ziyareti görmez ve geri alamaz; yönetici çöp kutusunda görür
+        expect((await call('GET', '/api/crew', { token: tokB })).data.visits).toHaveLength(0);
+        expect((await call('GET', '/api/crew', { token: tokA })).data.visits[0].deletedAt).toBeTruthy();
+        expect((await call('POST', '/api/crew/visits/pub_aaaaaaaaaaaa/restore', { token: tokB })).status).toBe(403);
+        const back = await call('POST', '/api/crew/visits/pub_aaaaaaaaaaaa/restore', { token: tokA });
+        expect(back.data.snapshot.visits[0].deletedAt).toBeNull();
+        expect((await call('GET', '/api/crew', { token: tokB })).data.visits).toHaveLength(1);
+    });
+
     it('fotoğraf yükler ve sunar, yanlış türü reddeder', async () => {
         const { tokA } = await setupCrew();
         const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3]);

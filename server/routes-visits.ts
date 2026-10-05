@@ -128,8 +128,10 @@ export async function updateVisit(ctx: Ctx, req: Request, p: Record<string, stri
     return json({ visitId: r.result.id, snapshot: r.snap() });
 }
 
+/** Ziyareti çöp kutusuna taşır. Yalnızca ekip kurucusu (yönetici) silebilir. */
 export async function deleteVisit(ctx: Ctx, req: Request, p: Record<string, string>) {
     const r = await withCrew(ctx, req, (crew, me) => {
+        requireOwner(me);
         const v = findVisit(crew, p.id);
         if (!v.deletedAt) { v.deletedAt = ctx.now(); v.updatedBy = me.id; }
         const sid = v.shareId; v.shareId = null;
@@ -140,8 +142,10 @@ export async function deleteVisit(ctx: Ctx, req: Request, p: Record<string, stri
     return json({ snapshot: r.snap() });
 }
 
+/** Silinen ziyareti geri alır. Yalnızca ekip kurucusu (yönetici). */
 export async function restoreVisit(ctx: Ctx, req: Request, p: Record<string, string>) {
     const r = await withCrew(ctx, req, (crew, me) => {
+        requireOwner(me);
         const v = findVisit(crew, p.id);
         v.deletedAt = null; v.updatedBy = me.id;
         return v;

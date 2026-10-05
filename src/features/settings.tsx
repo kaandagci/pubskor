@@ -356,7 +356,7 @@ export function Settings() {
                         <div class="list">
                             <Row icon={<Download />} title="Yedekle (JSON)" sub="Ekibin tüm verileri" onClick={exportJSON} />
                             <Row icon={<FileText />} title="Puanları dışa aktar (CSV)" sub="Excel / Sheets için" onClick={exportCSV} />
-                            <Row icon={<Trash2 />} title="Çöp kutusu" sub={`${deletedVisits.value.length} silinmiş ziyaret`} onClick={() => openSheet({ title: 'Çöp kutusu', render: () => <Trash /> })} />
+                            {owner && <Row icon={<Trash2 />} title="Çöp kutusu" sub={`${deletedVisits.value.length} silinmiş ziyaret · yalnızca sen görürsün`} onClick={() => openSheet({ title: 'Çöp kutusu', render: () => <Trash /> })} />}
                             <Row icon={<RefreshCw />} title="Şimdi eşitle" onClick={() => syncCrew({ force: true }).then(() => toast('Eşitlendi'))} />
                         </div>
                     </section>

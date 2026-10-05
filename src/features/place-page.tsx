@@ -135,7 +135,10 @@ export function PlacePage() {
                     </div>
                 </section>
 
-                <p class="tiny faint mt-24">{place.community ? 'Bu mekanı Pub Skor kullanıcıları ekledi.' : 'Mekan bilgileri Overture Maps açık verisinden (Foursquare, Meta, Microsoft). Hatalı olabilir.'}</p>
+                <p class="tiny faint mt-24">
+                    {place.community ? 'Bu mekanı Pub Skor kullanıcıları ekledi.' : 'Mekan bilgileri Overture Maps açık verisinden (Foursquare, Meta, Microsoft).'}
+                    {' '}{place.v === 2 ? 'Alkol servisi elle doğrulandı.' : place.v === 1 ? 'Alkol servisi mekanın kendi web sitesindeki menüye göre doğrulandı.' : place.community ? '' : 'Alkol servisi kategori bilgisinden tahmin edildi; yanlışsa bildir.'}
+                </p>
             </main>
         </>
     );
