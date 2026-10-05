@@ -7,7 +7,7 @@ import type { VenueInput } from '../../shared/types';
 import { LIMITS } from '../../shared/validate';
 import { fmtDistance, fmtRelativeDay, fmtScore } from '../lib/format';
 import { inIstanbul } from '../../shared/istanbul';
-import { mapsSearchUrl, type CatalogPlace } from '../../shared/places';
+import { isNightKind, mapsSearchUrl, type CatalogPlace } from '../../shared/places';
 import { distance, getPosition, kindLabel, lastPosition, nearby, searchNominatim, searchPlaces, type LatLng, type Place } from '../lib/geo';
 import { catalogAround, searchCatalog, toPlace } from '../lib/places';
 import { ApiError, request } from '../lib/api';
@@ -120,16 +120,19 @@ export function VenuePicker({ onPick }: { onPick: (c: VenueChoice) => void }) {
     };
 
     const [share, setShare] = useState(true);
-    const canShare = !!pos && inIstanbul(pos.lat, pos.lng) && !!authUser.value && online.value;
+    const [alcohol, setAlcohol] = useState(false);
+    // Topluluk listesi yalnızca alkollü içki servis eden mekanlar içindir (restoranda onay istenir)
+    const shareableKind = isNightKind(kind) || kind === 'restoran';
+    const canShare = !!pos && inIstanbul(pos.lat, pos.lng) && !!authUser.value && online.value && shareableKind;
     const addManual = async () => {
         const name = q.trim().slice(0, LIMITS.venueName);
         if (!name) return;
         let placeId: string | null = null;
         let finalName = name;
         // Topluluk mekanı: İstanbul listesine eklenir, sonraki aramalarda herkes bulur (puanlar gizli kalır)
-        if (share && canShare) {
+        if (share && canShare && (kind !== 'restoran' || alcohol)) {
             try {
-                const r = await request<{ place: CatalogPlace; existing: boolean }>('POST', '/api/places/community', { body: { name, kind, lat: pos!.lat, lng: pos!.lng, district: area } });
+                const r = await request<{ place: CatalogPlace; existing: boolean }>('POST', '/api/places/community', { body: { name, kind, lat: pos!.lat, lng: pos!.lng, district: area, alcohol } });
                 placeId = r.place.id;
                 if (r.existing) { finalName = r.place.name; toast(`“${r.place.name}” zaten listede; o seçildi`, 'info'); }
             } catch (e) {
@@ -235,6 +238,13 @@ export function VenuePicker({ onPick }: { onPick: (c: VenueChoice) => void }) {
                                     <Switch checked={share} onChange={setShare} label="Herkes bulabilsin" />
                                 </label>
                             )}
+                            {canShare && share && kind === 'restoran' && (
+                                <label class="row mt-8" style={{ gap: '10px' }}>
+                                    <input type="checkbox" checked={alcohol} onChange={e => setAlcohol((e.target as HTMLInputElement).checked)} />
+                                    <span class="small">Bu restoranda alkollü içki servisi var</span>
+                                </label>
+                            )}
+                            {!shareableKind && <p class="hint mt-8">Bu tür mekanlar yalnızca ekibinde görünür; Pub Skor listesine alkollü içki servis eden mekanlar eklenir.</p>}
                             <AsyncButton class="btn btn-primary btn-block mt-12" onClick={addManual}>Mekanı ekle</AsyncButton>
                         </div>
                     )}

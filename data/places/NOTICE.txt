@@ -5,4 +5,5 @@ Overture verisi şu kaynakları birleştirir; her kayıt kaynağının lisansın
   - Microsoft: CDLA-Permissive-2.0
   - Foursquare Open Source Places: Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
   - AllThePlaces: CC0-1.0
-Bu dosyadaki veriler Overture verisinden filtrelenip dönüştürülmüştür (yalnızca yeme-içme ve gece hayatı, İstanbul).
+İl ve ilçe sınırları: Overture divisions teması (OpenStreetMap katkıcıları, ODbL); yalnızca mekanların ilçesini belirlemek için kullanıldı.
+Bu dosyadaki veriler Overture verisinden filtrelenip dönüştürülmüştür (yalnızca İstanbul'daki alkollü içki servis eden mekanlar).

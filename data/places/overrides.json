@@ -1,0 +1,16 @@
+{
+  "_aciklama": "Katalog istisnaları. allow: açık verinin kategorisi yetersiz kaldığı için otomatik seçilmeyen ama alkol servisi olduğu bilinen mekanlar (ad katlanmış haliyle eşleşir; prefix=true ise adın başı). deny: önerilmemesi gereken kayıtlar (katalog kimliği ya da ad + ilçe). Değiştirdikten sonra: npm run places:ist",
+  "allow": [
+    { "name": "Mikla", "kind": "restoran" },
+    { "name": "Neolokal", "kind": "restoran" },
+    { "name": "Yeni Lokanta", "kind": "restoran" },
+    { "name": "Lokanta Maya", "kind": "restoran" },
+    { "name": "Karaköy Lokantası", "kind": "meyhane" },
+    { "name": "Balıkçı Sabahattin", "kind": "meyhane", "prefix": true },
+    { "name": "Babylon", "kind": "bar", "district": "Şişli" },
+    { "name": "Hayal Kahvesi", "kind": "bar", "prefix": true },
+    { "name": "Salon İKSV", "kind": "bar", "prefix": true },
+    { "name": "360 Istanbul", "kind": "bar", "prefix": true }
+  ],
+  "deny": []
+}

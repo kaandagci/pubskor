@@ -17,6 +17,7 @@
 | Hesaplar (v8.1) | Uyum gerekli | E-posta ve şifre Netlify Identity'de (ABD). Kayıtta 18+ ve koşul onayı zaman damgasıyla saklanıyor. Uygulama içinden hesap silme var (App Store da bunu şart koşuyor). |
 | Google Maps verisi | **Kullanılmıyor** | Google'ın koşulları kazımayı ve saklamayı yasaklıyor. Yalnızca anahtarsız "Google Maps'te aç / yol tarifi" bağlantıları var; Google'a veri gitmiyor. |
 | Mekan kataloğu (Overture) | Uyumlu, atıf gerekli | Meta/Microsoft CDLA-Permissive-2.0, Foursquare Apache-2.0, AllThePlaces CC0. Atıf `/yasal` sayfasında ve `data/places/NOTICE.txt` dosyasında. |
+| Yalnızca içki mekanı önerme | Dikkat | Uygulama yalnızca alkol servis eden mekanları listeliyor. Bu bir mekan rehberi; ürün ya da marka tanıtımı yok. Yine de: içecek markası, fiyat kampanyası, "happy hour" ya da indirim duyurusu listelenmemeli; mekanlardan ücretli öne çıkarma alınmamalı; ifadeler nötr kalmalı ("çok gidilen", "en iyi içki" değil); 18+ kapısı korunmalı. Reklam açılmadan önce avukata sorulmalı. |
 | Anonim popülerlik | Düşük risk | HMAC'lenmiş grup özetleri, en az 3 grup eşiği, 60/90 gün saklama, kurucu kapatabilir. Aydınlatma metninde ayrı bölüm. |
 | Topluluk mekanları | 5651 kapsamında yer sağlayıcılık | Kullanıcılar mekan adı ve konumu ekleyebiliyor. Kişi başı günlük sınır var. Bildirim e-postasından gelen yanıltıcı kayıtlar gizlenmeli (`places/community` belgesinde `hidden: true`). |
 

@@ -1,21 +1,26 @@
-// İstanbul mekan kataloğu: Overture Maps "places" verisinden yeme-içme ve gece hayatı mekanlarını çıkarır.
+// İstanbul mekan kataloğu: Overture Maps verisinden İstanbul'un 39 ilçesindeki alkollü içki servis eden
+// mekanları (bar, pub, meyhane, şarap ve kokteyl barları, gece kulüpleri, alkol servisi olan restoranlar) çıkarır.
 //
 // Kullanım:  npm run places:ist            (en son Overture sürümü)
 //            npm run places:ist -- 2026-09-23.1
 //
+// İl ve ilçe sınırları Overture "divisions" temasından gelir (OpenStreetMap kaynaklı); mekan, içinde bulunduğu
+// ilçeye atanır, il sınırı dışındakiler (Gebze, Çerkezköy…) elenir. Alkol sınıflandırması shared/alcohol.ts.
+//
 // Gereken: internet bağlantısı. DuckDB paketi --no-save ile kurulur, uygulamanın bağımlılıklarına girmez.
-// Çıktı: data/places/ist.json (+ NOTICE.txt). Lisanslar: Meta / Microsoft (CDLA-Permissive-2.0),
-// Foursquare (Apache-2.0), AllThePlaces (CC0). Ayrıntı NOTICE.txt'de.
+// Çıktı: data/places/ist.json (+ NOTICE.txt). Lisanslar NOTICE.txt'de.
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { DuckDBInstance } from '@duckdb/node-api';
 import { runnerImport } from 'vite';
 
-// Paylaşılan TypeScript modülleri (ilçeler, Türkçe katlama) Vite ile yüklenir
+// Paylaşılan TypeScript modülleri Vite ile yüklenir
 const { module: ist } = await runnerImport('./shared/istanbul.ts');
 const { module: text } = await runnerImport('./shared/text.ts');
-const { DISTRICTS, ISTANBUL_BBOX, districtFromText, nearestDistrict } = ist;
+const { module: alc } = await runnerImport('./shared/alcohol.ts');
+const { DISTRICTS, ISTANBUL_BBOX, districtFromText } = ist;
 const { foldKey } = text;
+const { classifyAlcohol } = alc;
 
 const OUT = 'data/places/ist.json';
 
@@ -26,36 +31,18 @@ async function latestRelease() {
     return all[all.length - 1];
 }
 
-// ----- Kategori eşlemesi (Overture taxonomy.primary → Pub Skor mekan türü) -----
-
-const KIND = {
-    pub: 'pub', irish_pub: 'pub', gastropub: 'pub', beer_bar: 'pub', beer_garden: 'pub',
-    brewery: 'brewpub',
-    cocktail_bar: 'kokteyl', speakeasy: 'kokteyl', tiki_bar: 'kokteyl',
-    wine_bar: 'sarap', winery: 'sarap',
-    bar: 'bar', whiskey_bar: 'bar', hotel_bar: 'bar', dive_bar: 'bar', gay_bar: 'bar', sports_bar: 'bar', sake_bar: 'bar',
-    beach_bar: 'bar', piano_bar: 'bar', lounge: 'bar', dance_club: 'bar', music_venue: 'bar', karaoke_venue: 'bar', salsa_club: 'bar',
-    hookah_bar: 'kafe', cafe: 'kafe', coffee_shop: 'kafe', tea_room: 'kafe', non_alcoholic_beverage_venue: 'kafe'
-};
-/** Puanlamaya konu olmayan yeme-içme işletmeleri. */
-const SKIP = new Set([
-    'bakery', 'dessert_shop', 'ice_cream_shop', 'candy_store', 'chocolatier', 'bagel_shop', 'donut_shop', 'cupcake_shop',
-    'delicatessen', 'food_truck_stand', 'food_court', 'smoothie_juice_bar', 'distillery', 'airport_lounge', 'patisserie',
-    'frozen_yogurt_shop', 'juice_bar', 'pretzel_shop', 'catering_service', 'food_delivery_service'
-]);
-const NIGHTLIFE = new Set(['dance_club', 'music_venue', 'karaoke_venue', 'salsa_club']);
-const MEYHANE_RE = /meyhane|taverna|tavern|\bfas[ıi]l\b|rak[ıi] ?bal[ıi]k/i;
-/** Kutunun içine düşen ama İstanbul'da olmayan yerler (Kocaeli, Tekirdağ). */
-const NOT_IST = new Set(['gebze', 'cayirova', 'darica', 'dilovasi', 'korfez', 'izmit', 'kocaeli', 'kartepe', 'derince', 'golcuk',
-    'cerkezkoy', 'kapakli', 'marmaraereglisi', 'tekirdag', 'saray', 'corlu', 'ergene', 'sulejmanpasa', 'suleymanpasa']);
-
-function kindOf(primary, basic, name) {
-    if (KIND[primary]) return KIND[primary];
-    if (basic === 'bar' || basic === 'lounge' || basic === 'alcoholic_beverage_venue') return 'bar';
-    if (basic === 'cafe' || basic === 'coffee_shop') return 'kafe';
-    if (MEYHANE_RE.test(name)) return 'meyhane';
-    return 'restoran';
+/** Elle düzenlenen istisnalar (data/places/overrides.json). */
+const overrides = JSON.parse(await readFile('data/places/overrides.json', 'utf8'));
+function override(name, district) {
+    const key = foldKey(name);
+    const dk = foldKey(district ?? '');
+    const hit = (o) => (o.prefix ? key.startsWith(foldKey(o.name)) : key === foldKey(o.name)) && (!o.district || foldKey(o.district) === dk);
+    if (overrides.deny.some(o => typeof o === 'object' && hit(o))) return 'deny';
+    return overrides.allow.find(hit)?.kind ?? null;
 }
+
+/** Gece hayatı kayıtlarında (daha seyrek) daha düşük güven eşiği; restoranlarda daha yüksek. */
+const MIN_CONF = { night: 0.4, food: 0.55 };
 
 // ----- Yardımcılar -----
 
@@ -120,45 +107,67 @@ console.log(`Overture sürümü: ${release}`);
 
 const db = await DuckDBInstance.create(':memory:');
 const con = await db.connect();
-await con.run(`INSTALL httpfs; LOAD httpfs; SET s3_region='us-west-2';`);
+await con.run(`INSTALL httpfs; LOAD httpfs; INSTALL spatial; LOAD spatial; SET s3_region='us-west-2';`);
 const t0 = Date.now();
-const res = await con.runAndReadAll(`
-    SELECT id, (bbox.xmin + bbox.xmax) / 2 AS lng, (bbox.ymin + bbox.ymax) / 2 AS lat, confidence,
-           names.primary AS name, basic_category AS basic, taxonomy.primary AS prim,
-           addresses[1].freeform AS freeform, addresses[1].locality AS locality, addresses[1].region AS region,
-           websites, phones, list_transform(sources, s -> s.dataset) AS datasets, operating_status AS status
-    FROM read_parquet('s3://overturemaps-us-west-2/release/${release}/theme=places/type=place/*', hive_partitioning=1)
+const base = `s3://overturemaps-us-west-2/release/${release}`;
+
+// İl ve ilçe sınırları (kara). Kıyıdaki / iskeledeki mekanlar için il deniz sınırı da alınır.
+await con.run(`CREATE TABLE ilce AS SELECT names.primary AS name, geometry AS geom
+    FROM read_parquet('${base}/theme=divisions/type=division_area/*', hive_partitioning=1)
+    WHERE country = 'TR' AND region = 'TR-34' AND subtype = 'county' AND class = 'land'`);
+await con.run(`CREATE TABLE il AS SELECT geometry AS geom
+    FROM read_parquet('${base}/theme=divisions/type=division_area/*', hive_partitioning=1)
+    WHERE country = 'TR' AND region = 'TR-34' AND subtype = 'region' AND class = 'maritime'`);
+const ilceCount = Number((await con.runAndReadAll('SELECT count(*) AS n FROM ilce')).getRowObjects()[0].n);
+if (ilceCount !== 39) throw new Error(`İlçe sınırları eksik: ${ilceCount}/39`);
+
+await con.run(`CREATE TABLE p AS SELECT id, (bbox.xmin + bbox.xmax) / 2 AS lng, (bbox.ymin + bbox.ymax) / 2 AS lat, confidence,
+        names.primary AS name, basic_category AS basic, taxonomy.primary AS prim,
+        addresses[1].freeform AS freeform, websites, phones, list_transform(sources, s -> s.dataset) AS datasets, operating_status AS status
+    FROM read_parquet('${base}/theme=places/type=place/*', hive_partitioning=1)
     WHERE bbox.xmin BETWEEN ${ISTANBUL_BBOX.minLng} AND ${ISTANBUL_BBOX.maxLng}
       AND bbox.ymin BETWEEN ${ISTANBUL_BBOX.minLat} AND ${ISTANBUL_BBOX.maxLat}
-      AND (taxonomy.hierarchy[1] = 'food_and_drink' OR taxonomy.primary IN ('dance_club', 'music_venue', 'karaoke_venue', 'salsa_club'))
-`);
-const rows = res.getRowObjects();
-console.log(`${rows.length} aday kayıt (${((Date.now() - t0) / 1000).toFixed(1)} sn)`);
+      AND (taxonomy.hierarchy[1] IN ('food_and_drink', 'arts_and_entertainment') OR basic_category IN ('bar', 'lounge', 'alcoholic_beverage_venue'))`);
 
-const stats = { skipCategory: 0, lowConfidence: 0, closed: 0, outside: 0, noName: 0, duplicate: 0 };
+// Her mekanın ilçesi: sınırın içindeyse o ilçe; il deniz sınırı içinde ama karada değilse (iskele, kıyı) 400 m'ye kadar en yakın ilçe
+const res = await con.runAndReadAll(`
+    WITH pts AS (SELECT *, ST_Point(lng, lat) AS pt FROM p),
+    inside AS (SELECT pts.*, ilce.name AS district FROM pts JOIN ilce ON ST_Contains(ilce.geom, pts.pt)),
+    coast AS (
+        SELECT pts.*, (SELECT ilce.name FROM ilce ORDER BY ST_Distance(ilce.geom, pts.pt) LIMIT 1) AS district,
+               (SELECT min(ST_Distance(ilce.geom, pts.pt)) FROM ilce) AS gap
+        FROM pts, il WHERE ST_Contains(il.geom, pts.pt) AND pts.id NOT IN (SELECT id FROM inside)
+    )
+    SELECT * EXCLUDE (pt) FROM inside
+    UNION ALL SELECT * EXCLUDE (pt, gap) FROM coast WHERE gap < 0.004`);
+const rows = res.getRowObjects();
+console.log(`${rows.length} aday kayıt il sınırı içinde (${((Date.now() - t0) / 1000).toFixed(1)} sn)`);
+
+const stats = { notAlcohol: 0, lowConfidence: 0, closed: 0, noName: 0, duplicate: 0 };
 const sources = {};
-let candidates = [];
+const candidates = [];
 for (const r of rows) {
-    const prim = r.prim ?? r.basic ?? '';
-    if (SKIP.has(prim) || SKIP.has(r.basic)) { stats.skipCategory++; continue; }
     if (r.status && r.status !== 'open') { stats.closed++; continue; }
     const name = cleanName(r.name);
     if (!name || name.length < 2) { stats.noName++; continue; }
-    const kind = kindOf(prim, r.basic, name);
-    const nightlife = kind === 'bar' || kind === 'pub' || kind === 'kokteyl' || kind === 'sarap' || kind === 'brewpub' || kind === 'meyhane' || NIGHTLIFE.has(prim);
-    if ((r.confidence ?? 0) < (nightlife ? 0.3 : 0.5)) { stats.lowConfidence++; continue; }
-    const loc = foldKey(r.locality ?? ''), reg = foldKey(r.region ?? '');
-    if (NOT_IST.has(loc) || NOT_IST.has(reg) || reg === '41' || reg === '59' || reg === 'kocaeli' || reg === 'tekirdag') { stats.outside++; continue; }
-    const district = districtFromText(r.locality) ?? districtFromText(r.freeform) ?? nearestDistrict(r.lat, r.lng);
-    // Yakın ilçe merkezinden çok uzaksa (komşu il) at
-    if (!districtFromText(r.locality) && meters(r, district) > 22000) { stats.outside++; continue; }
+    const forced = override(name, r.district);
+    if (forced === 'deny') { stats.notAlcohol++; continue; }
+    const kind = forced ?? classifyAlcohol({ primary: r.prim ?? null, basic: r.basic ?? null, name });
+    if (!kind) { stats.notAlcohol++; continue; }
+    const food = kind === 'restoran' || (r.basic === 'restaurant' || r.basic === 'casual_eatery');
+    if (!forced && (r.confidence ?? 0) < (food ? MIN_CONF.food : MIN_CONF.night)) { stats.lowConfidence++; continue; }
+    const district = districtFromText(r.district) ?? DISTRICTS.find(d => foldKey(d.name) === foldKey(r.district ?? ''));
+    if (!district) { stats.noName++; continue; }
     for (const ds of r.datasets?.items ?? r.datasets ?? []) if (ds !== 'Overture') sources[ds] = (sources[ds] ?? 0) + 1;
+    const web = cleanWeb(r.websites?.items ?? r.websites);
+    const phone = cleanPhone(r.phones?.items?.[0] ?? r.phones?.[0]);
     candidates.push({
-        id: shortId(r.id), name, key: foldKey(name), kind, cat: prim,
+        id: shortId(r.id), name, key: foldKey(name), kind, cat: r.prim ?? r.basic ?? '',
         lat: Math.round(r.lat * 1e5) / 1e5, lng: Math.round(r.lng * 1e5) / 1e5,
         district: district.name, address: cleanAddress({ freeform: r.freeform }, district.name),
-        phone: cleanPhone(r.phones?.items?.[0] ?? r.phones?.[0]), web: cleanWeb(r.websites?.items ?? r.websites),
-        conf: r.confidence ?? 0
+        phone, web, conf: r.confidence ?? 0,
+        // Bilinirlik: güven puanı + iletişim bilgisi (ilçe listelerinde sıralama için, 0-100)
+        q: Math.round(Math.min(1, (r.confidence ?? 0) * 0.7 + (web ? 0.15 : 0) + (phone ? 0.15 : 0)) * 100)
     });
 }
 
@@ -185,9 +194,11 @@ for (const p of candidates) {
     grid.get(k).push(p);
     kept.push(p);
 }
+const denyIds = new Set(overrides.deny.filter(x => typeof x === 'string'));
+for (let i = kept.length - 1; i >= 0; i--) if (denyIds.has(kept[i].id)) kept.splice(i, 1);
 kept.sort((a, b) => a.id.localeCompare(b.id));
 
-const FIELDS = ['id', 'name', 'kind', 'lat', 'lng', 'district', 'address', 'phone', 'web', 'cat'];
+const FIELDS = ['id', 'name', 'kind', 'lat', 'lng', 'district', 'address', 'phone', 'web', 'cat', 'q'];
 const out = {
     v: 1,
     city: 'ist',
@@ -206,7 +217,8 @@ Overture verisi şu kaynakları birleştirir; her kayıt kaynağının lisansın
   - Microsoft: CDLA-Permissive-2.0
   - Foursquare Open Source Places: Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
   - AllThePlaces: CC0-1.0
-Bu dosyadaki veriler Overture verisinden filtrelenip dönüştürülmüştür (yalnızca yeme-içme ve gece hayatı, İstanbul).
+İl ve ilçe sınırları: Overture divisions teması (OpenStreetMap katkıcıları, ODbL); yalnızca mekanların ilçesini belirlemek için kullanıldı.
+Bu dosyadaki veriler Overture verisinden filtrelenip dönüştürülmüştür (yalnızca İstanbul'daki alkollü içki servis eden mekanlar).
 `);
 
 const byKind = {}, byDistrict = {};
@@ -214,5 +226,6 @@ for (const p of kept) { byKind[p.kind] = (byKind[p.kind] ?? 0) + 1; byDistrict[p
 console.log('Elenen:', stats);
 console.log('Kaynak:', sources);
 console.log('Tür:', byKind);
-console.log('İlçe sayısı:', Object.keys(byDistrict).length, '/', DISTRICTS.length);
+console.log('İlçe:', Object.keys(byDistrict).length, '/', DISTRICTS.length);
+console.log(Object.entries(byDistrict).sort((a, b) => b[1] - a[1]).map(([d, n]) => `${d} ${n}`).join(' · '));
 console.log(`${kept.length} mekan → ${OUT} (${(JSON.stringify(out).length / 1e6).toFixed(1)} MB)`);

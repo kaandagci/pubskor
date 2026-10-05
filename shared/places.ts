@@ -16,12 +16,16 @@ export interface CatalogPlace {
     web: string;
     /** Overture kategori kodu (ör. "cocktail_bar"). */
     cat: string;
+    /** Bilinirlik (0-100): kaynak güveni + iletişim bilgisi. İlçe listelerinde sıralama için. */
+    q?: number;
+    /** Kullanıcılar "alkol servisi yok / kapandı" bildirdi: önerilmez. */
+    hidden?: boolean;
     /** Topluluk kaydı mı (Google aramasıyla eklenmiş, kullanıcı onaylı)? */
     community?: boolean;
     gplace?: string | null;
 }
 
-export type CatalogRow = [string, string, string, number, number, string, string, string, string, string];
+export type CatalogRow = [string, string, string, number, number, string, string, string, string, string, number?];
 
 export interface CatalogFile {
     v: 1;
@@ -40,11 +44,16 @@ export const isPlaceId = (v: unknown): v is string => typeof v === 'string' && (
 export function fromRow(r: CatalogRow): CatalogPlace {
     return {
         id: r[0], name: r[1], kind: isVenueKind(r[2]) ? r[2] : 'diger', lat: r[3], lng: r[4],
-        district: r[5], address: r[6], phone: r[7], web: r[8], cat: r[9]
+        district: r[5], address: r[6], phone: r[7], web: r[8], cat: r[9], q: r[10] ?? 50
     };
 }
 
-export const toRow = (p: CatalogPlace): CatalogRow => [p.id, p.name, p.kind, p.lat, p.lng, p.district, p.address, p.phone, p.web, p.cat];
+export const toRow = (p: CatalogPlace): CatalogRow => [p.id, p.name, p.kind, p.lat, p.lng, p.district, p.address, p.phone, p.web, p.cat, p.q ?? 50];
+
+/** Bildirim nedenleri: iki farklı hesap aynı nedeni bildirirse mekan önerilerden düşer. */
+export const REPORT_REASONS = { no_alcohol: 'Alkol servisi yok', closed: 'Kapandı', wrong: 'Bilgiler yanlış' } as const;
+export type ReportReason = keyof typeof REPORT_REASONS;
+export const REPORT_HIDE_AT = 2;
 
 // ----- Geohash karoları -----
 

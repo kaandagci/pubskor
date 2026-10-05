@@ -1,5 +1,6 @@
-// Keşfet: İstanbul'da bugün / bu hafta / bu ay çok gidilen mekanlar (Pub Skor ekiplerinin anonim kayıtları),
-// semt ve tür filtresi, liste ya da harita. Veri yetersizse yakındaki mekanları katalogdan gösterir.
+// Keşfet: İstanbul'un 39 ilçesinde bugün / bu hafta / bu ay çok gidilen içki mekanları (Pub Skor ekiplerinin
+// anonim kayıtları), ilçe / semt / tür filtresi, liste ya da harita. Veri yetersizse seçilen bölgenin
+// mekanlarını katalogdan gösterir (ilçe seçilince ilçenin tamamı).
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { lazy } from 'preact-iso';
 import { DISTRICTS, HOODS, ISTANBUL_CENTER, inIstanbul } from '../../shared/istanbul';
@@ -7,27 +8,25 @@ import { venueKindLabel, type VenueKind } from '../../shared/metrics';
 import { meters, type CatalogPlace } from '../../shared/places';
 import { fmtDistance, fmtScore } from '../lib/format';
 import { getPosition, lastPosition, type LatLng } from '../lib/geo';
-import { catalogAround } from '../lib/places';
+import { browsePlaces, catalogAround, catalogMeta } from '../lib/places';
 import { loadPopular, placeStats, popular, type PopularItem, type Window } from '../lib/popular';
 import { memberships } from '../state/session';
-import { toastError } from '../state/ui';
-import { ChevronRight, ListOrdered, LocateFixed, Map as MapIcon, Sparkles, TrendingDown, TrendingUp } from '../components/icons';
+import { openSheet, toastError } from '../state/ui';
+import { ChevronDown, ChevronRight, ListOrdered, LocateFixed, Map as MapIcon, Sparkles, TrendingDown, TrendingUp } from '../components/icons';
 import { Pint } from '../components/Pint';
-import { Segmented, Spinner, TopBar } from '../components/ui';
+import { AsyncButton, Segmented, Spinner, TopBar } from '../components/ui';
 
 const ExploreMap = lazy(() => import('./explore-map'));
 
 type Area = { type: 'near' } | { type: 'all' } | { type: 'hood'; id: string } | { type: 'district'; name: string };
-type KindFilter = 'all' | 'night' | 'kokteyl' | 'meyhane' | 'sarap' | 'restoran' | 'kafe';
+type KindFilter = 'all' | 'night' | 'kokteyl' | 'meyhane' | 'sarap' | 'restoran';
 
 const KIND_FILTERS: [KindFilter, string][] = [
-    ['all', 'Tümü'], ['night', 'Bar & pub'], ['kokteyl', 'Kokteyl'], ['meyhane', 'Meyhane'], ['sarap', 'Şarap'], ['restoran', 'Restoran'], ['kafe', 'Kafe']
+    ['all', 'Tümü'], ['night', 'Bar & pub'], ['kokteyl', 'Kokteyl'], ['meyhane', 'Meyhane'], ['sarap', 'Şarap'], ['restoran', 'Restoran']
 ];
 const kindMatch = (f: KindFilter, k: VenueKind) =>
     f === 'all' || (f === 'night' ? k === 'pub' || k === 'bar' || k === 'brewpub' : k === f);
 
-/** Semt seçicide öne çıkan ilçeler (gece hayatı yoğunluğuna göre). */
-const TOP_DISTRICTS = ['Kadıköy', 'Beyoğlu', 'Beşiktaş', 'Şişli', 'Üsküdar', 'Sarıyer', 'Bakırköy', 'Ataşehir', 'Fatih', 'Maltepe'];
 
 const WINDOW_LABEL: Record<Window, string> = { day: 'bugün', week: 'bu hafta', month: 'bu ay' };
 
@@ -82,6 +81,26 @@ function NearbyRow({ p, dist }: { p: CatalogPlace; dist: number | null }) {
     );
 }
 
+/** Tüm ilçeler (alfabetik) ve katalogdaki mekan sayıları. */
+function DistrictSheet({ current, onPick }: { current: string | null; onPick: (name: string) => void }) {
+    const [counts, setCounts] = useState<Record<string, number>>({});
+    useEffect(() => { void catalogMeta().then(m => setCounts(m.districts ?? {})); }, []);
+    const list = [...DISTRICTS].sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    return (
+        <div class="district-grid">
+            {list.map(d => (
+                <button key={d.id} class="district-cell" aria-pressed={current === d.name} onClick={() => onPick(d.name)}>
+                    <b>{d.name}</b><span class="tiny faint">{counts[d.name] ? `${counts[d.name]} mekan` : d.side === 'anadolu' ? 'Anadolu' : 'Avrupa'}</span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
+const KIND_SET: Record<KindFilter, string[]> = {
+    all: [], night: ['pub', 'bar', 'brewpub'], kokteyl: ['kokteyl'], meyhane: ['meyhane'], sarap: ['sarap'], restoran: ['restoran']
+};
+
 export function Explore() {
     const [win, setWin] = useState<Window>('week');
     const [area, setArea] = useState<Area>(() => (lastPosition() && inIstanbul(lastPosition()!.lat, lastPosition()!.lng) ? { type: 'near' } : { type: 'all' }));
@@ -89,9 +108,11 @@ export function Explore() {
     const [pos, setPos] = useState<LatLng | null>(lastPosition());
     const [locating, setLocating] = useState(false);
     const [view, setView] = useState<'list' | 'map'>('list');
-    const [nearby, setNearby] = useState<(CatalogPlace & { distance: number })[] | null>(null);
+    const [nearby, setNearby] = useState<(CatalogPlace & { distance: number | null })[] | null>(null);
+    const [browse, setBrowse] = useState<{ total: number; places: CatalogPlace[] } | null>(null);
+    const [counts, setCounts] = useState<Record<string, number>>({});
 
-    useEffect(() => { void loadPopular(); }, []);
+    useEffect(() => { void loadPopular(); void catalogMeta().then(m => setCounts(m.districts ?? {})); }, []);
 
     const center = areaCenter(area, pos);
     const items = useMemo(() => {
@@ -107,17 +128,30 @@ export function Explore() {
             .map(p => ({ p, dist: pos ? meters(pos, p) : null }));
     }, [popular.value, win, kind, area, pos]);
 
-    // Popüler liste boşsa: seçili bölgenin çevresindeki mekanlar (katalogdan)
-    const fallbackCenter = center ?? ISTANBUL_CENTER;
+    // Popüler liste kısa kaldıysa: seçilen bölgedeki mekanlar (yakınım / semt: çevre; ilçe: ilçenin tamamı)
+    const few = items.length < 5;
     useEffect(() => {
-        if (items.length >= 5) { setNearby(null); return; }
+        setNearby(null); setBrowse(null);
+        if (!few) return;
         let live = true;
-        void catalogAround(fallbackCenter, area.type === 'all' ? 600 : 900).then(r => {
-            if (!live) return;
-            setNearby(r.filter(p => kindMatch(kind, p.kind)).sort((a, b) => nightFirst(a) - nightFirst(b) || a.distance - b.distance).slice(0, 25));
-        });
+        if (area.type === 'district') {
+            void browsePlaces(area.name, KIND_SET[kind]).then(r => { if (live) setBrowse(r); }).catch(() => undefined);
+        } else if (area.type === 'near' || area.type === 'hood') {
+            const c = center;
+            if (c) void catalogAround(c, area.type === 'near' ? 1500 : 900).then(r => {
+                if (!live) return;
+                setNearby(r.filter(p => kindMatch(kind, p.kind)).sort((a, b) => nightFirst(a) - nightFirst(b) || a.distance - b.distance).slice(0, 40)
+                    .map(p => ({ ...p, distance: area.type === 'near' ? p.distance : null })));
+            });
+        }
         return () => { live = false; };
-    }, [items.length, fallbackCenter.lat, fallbackCenter.lng, kind]);
+    }, [few, JSON.stringify(area), kind, center?.lat, center?.lng]);
+
+    const more = async () => {
+        if (area.type !== 'district' || !browse) return;
+        const r = await browsePlaces(area.name, KIND_SET[kind], browse.places.length);
+        setBrowse({ total: r.total, places: [...browse.places, ...r.places] });
+    };
 
     const locate = async () => {
         setLocating(true);
@@ -127,6 +161,10 @@ export function Explore() {
             setArea(inIstanbul(p.lat, p.lng) ? { type: 'near' } : { type: 'all' });
         } catch (e) { toastError(e); } finally { setLocating(false); }
     };
+    const pickDistrict = () => openSheet({
+        title: 'İlçe seç',
+        render: close => <DistrictSheet current={area.type === 'district' ? area.name : null} onPick={name => { setArea({ type: 'district', name }); close(); }} />
+    });
 
     const chip = (a: Area, label: string) => {
         const active = JSON.stringify(a) === JSON.stringify(area);
@@ -134,6 +172,7 @@ export function Explore() {
     };
 
     const loaded = popular.value != null;
+    const fallbackPins = browse?.places ?? nearby ?? [];
     return (
         <>
             <TopBar title="Keşfet" actions={
@@ -147,8 +186,10 @@ export function Explore() {
                         {locating ? <Spinner small /> : <LocateFixed />}Yakınımda
                     </button>
                     {chip({ type: 'all' }, 'Tüm İstanbul')}
-                    {HOODS.slice(0, 12).map(h => chip({ type: 'hood', id: h.id }, h.name))}
-                    {TOP_DISTRICTS.map(d => chip({ type: 'district', name: d }, d))}
+                    <button class="chip" aria-pressed={area.type === 'district'} onClick={pickDistrict}>
+                        {area.type === 'district' ? area.name : 'İlçe seç'}<ChevronDown size={14} />
+                    </button>
+                    {HOODS.map(h => chip({ type: 'hood', id: h.id }, h.name))}
                 </div>
                 <div class="mt-12">
                     <Segmented label="Zaman" value={win} onChange={setWin} options={[{ value: 'day', label: 'Bugün' }, { value: 'week', label: 'Bu hafta' }, { value: 'month', label: 'Bu ay' }]} />
@@ -158,7 +199,7 @@ export function Explore() {
                 </div>
 
                 {view === 'map' ? (
-                    <div class="mt-16"><ExploreMap items={items.map(x => x.p)} nearby={items.length ? [] : nearby ?? []} center={fallbackCenter} pos={pos} /></div>
+                    <div class="mt-16"><ExploreMap items={items.map(x => x.p)} nearby={few ? fallbackPins : []} center={center ?? ISTANBUL_CENTER} pos={pos} /></div>
                 ) : (
                     <section class="section" style={{ marginTop: '20px' }}>
                         <div class="section-head"><h2>{areaLabel(area)} {WINDOW_LABEL[win]} çok gidilenler</h2></div>
@@ -170,10 +211,30 @@ export function Explore() {
                                 <p class="small muted mt-8">Bir mekan, {WINDOW_LABEL[win]} en az 3 farklı Pub Skor grubu tarafından ziyaret edildiğinde burada görünür. Ekibinle puanladıkça liste canlanır.</p>
                             </div>
                         )}
-                        {nearby && nearby.length > 0 && (
+
+                        {few && area.type === 'all' && (
                             <div class="mt-24">
-                                <div class="eyebrow mb-8">{area.type === 'all' ? 'Taksim civarında' : 'Bu civarda'} mekanlar</div>
-                                <div class="list">{nearby.map(p => <NearbyRow key={p.id} p={p} dist={area.type === 'near' ? p.distance : null} />)}</div>
+                                <div class="eyebrow mb-8">İlçelere göre mekanlar</div>
+                                <div class="district-grid">
+                                    {[...DISTRICTS].sort((a, b) => (counts[b.name] ?? 0) - (counts[a.name] ?? 0)).map(d => (
+                                        <button key={d.id} class="district-cell" onClick={() => setArea({ type: 'district', name: d.name })}>
+                                            <b>{d.name}</b><span class="tiny faint">{counts[d.name] ?? 0} mekan</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {few && browse && (
+                            <div class="mt-24">
+                                <div class="eyebrow mb-8">{area.type === 'district' ? `${area.name} ilçesindeki mekanlar` : 'Mekanlar'} · {browse.total}</div>
+                                <div class="list">{browse.places.map(p => <NearbyRow key={p.id} p={p} dist={pos ? meters(pos, p) : null} />)}</div>
+                                {browse.places.length < browse.total && <AsyncButton class="btn btn-secondary btn-block mt-12" onClick={more}>Daha fazla göster</AsyncButton>}
+                            </div>
+                        )}
+                        {few && nearby && nearby.length > 0 && (
+                            <div class="mt-24">
+                                <div class="eyebrow mb-8">{area.type === 'near' ? 'Yakınındaki mekanlar' : 'Bu civarda mekanlar'}</div>
+                                <div class="list">{nearby.map(p => <NearbyRow key={p.id} p={p} dist={p.distance} />)}</div>
                             </div>
                         )}
                     </section>
@@ -186,7 +247,7 @@ export function Explore() {
                         <ChevronRight class="faint" />
                     </a>
                 )}
-                <p class="tiny faint mt-24">Listeler Pub Skor ekiplerinin anonim ziyaretlerinden oluşur; ekip ya da kişi bilgisi paylaşılmaz. Mekan bilgileri Overture Maps açık verisinden.</p>
+                <p class="tiny faint mt-24">Yalnızca alkollü içki servis eden mekanlar listelenir. Listeler Pub Skor ekiplerinin anonim ziyaretlerinden oluşur; ekip ya da kişi bilgisi paylaşılmaz. Mekan bilgileri Overture Maps açık verisinden.</p>
             </main>
         </>
     );

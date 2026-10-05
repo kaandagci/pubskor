@@ -344,3 +344,7 @@
 .trend.up { color: var(--good, #4caf7d); }
 .trend.down { color: var(--text-3); }
 .explore-map { height: min(62dvh, 560px); border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); }
+.district-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.district-cell { display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-1); border: 1px solid var(--line); color: inherit; }
+.district-cell b { font-size: 14.5px; font-weight: 650; }
+.district-cell[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }

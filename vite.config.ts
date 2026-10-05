@@ -53,9 +53,10 @@ function devApi(): Plugin {
                         catalog ??= JSON.parse(await readFile('data/places/ist.json', 'utf8'));
                         const cat = catalog as { rows: [string, string, string, number, number, string][] };
                         const byId = (placeIndex ??= new Map(cat.rows.map(r => [r[0], { id: r[0], name: r[1], kind: r[2], lat: r[3], lng: r[4], district: r[5] }])));
-                        const { communityLoader } = await server.ssrLoadModule('/server/community.ts');
+                        const { communityLoader, hiddenLoader } = await server.ssrLoadModule('/server/community.ts');
                         const community = await communityLoader(kv, 0)() as { id: string }[];
-                        const placeLookup = (id: string) => byId.get(id) ?? community.find(p => p.id === id);
+                        const hidden = await hiddenLoader(kv, 2, 0)() as Set<string>;
+                        const placeLookup = (id: string) => (hidden.has(id) ? null : byId.get(id) ?? community.find(p => p.id === id));
                         app = createApp({ kv, legacy, identity: devIdentity, dev: true, placeLookup, adminKey: process.env.ADMIN_KEY || '' });
                     }
                     const chunks: Buffer[] = [];
@@ -81,6 +82,13 @@ function devApi(): Plugin {
  * Mekan kataloğunu geohash6 karolarına böler: /places/ist/<karo>.json (statik, CDN'den gelir, çevrimdışı önbelleğe alınır).
  * Geliştirmede aynı dosyalar bellekten sunulur.
  */
+/** Katalog özeti: sürüm, toplam ve ilçe başına mekan sayısı. */
+function metaOf(catalog: CatalogFile, tiles: number) {
+    const districts: Record<string, number> = {};
+    for (const r of catalog.rows) districts[r[5] as string] = (districts[r[5] as string] ?? 0) + 1;
+    return { release: catalog.release, count: catalog.count, tiles, districts };
+}
+
 function placeTiles(): Plugin {
     const build = async () => {
         const catalog = JSON.parse(await readFile('data/places/ist.json', 'utf8')) as CatalogFile;
@@ -103,7 +111,7 @@ function placeTiles(): Plugin {
                 cached ??= await build();
                 const rows = m[1] === 'meta' ? null : cached.tiles.get(m[1]);
                 res.setHeader('content-type', 'application/json');
-                if (m[1] === 'meta') { res.end(JSON.stringify({ release: cached.catalog.release, count: cached.catalog.count })); return; }
+                if (m[1] === 'meta') { res.end(JSON.stringify(metaOf(cached.catalog, cached.tiles.size))); return; }
                 if (!rows) { res.statusCode = 404; res.end('{}'); return; }
                 res.end(JSON.stringify({ v: 1, rows }));
             });
@@ -114,7 +122,7 @@ function placeTiles(): Plugin {
                 this.emitFile({ type: 'asset', fileName: `places/ist/${g}.json`, source: JSON.stringify({ v: 1, rows }) });
             }
             this.emitFile({ type: 'asset', fileName: 'places/empty.json', source: '{"v":1,"rows":[]}' });
-            this.emitFile({ type: 'asset', fileName: 'places/ist/meta.json', source: JSON.stringify({ release: catalog.release, count: catalog.count, tiles: tiles.size }) });
+            this.emitFile({ type: 'asset', fileName: 'places/ist/meta.json', source: JSON.stringify(metaOf(catalog, tiles.size)) });
         }
     };
 }

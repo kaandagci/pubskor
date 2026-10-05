@@ -1,6 +1,7 @@
 // Konum ve mekan arama (İstanbul dışı ya da katalogda olmayan mekanlar için yedek): yakındaki mekanlar
 // OpenStreetMap/Overpass'tan, adla arama Photon'dan (anahtarsız, ücretsiz). İstanbul'da önce kendi kataloğumuz
 // kullanılır (src/lib/places.ts). İstekler yalnızca kullanıcı istediğinde atılır.
+import { isAlcoholOsm } from '../../shared/alcohol';
 import type { VenueKind } from '../../shared/metrics';
 
 export interface Place {
@@ -62,9 +63,10 @@ async function fetchJSON(url: string, init?: RequestInit, ms = 12000): Promise<a
 const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 
 export async function nearby(pos: LatLng, radius = 700): Promise<Place[]> {
+    // Yalnızca içki mekanları (restoranlar adında meyhane / bar vb. geçiyorsa aşağıda süzülür)
     const q = `[out:json][timeout:12];(` +
-        `node(around:${radius},${pos.lat},${pos.lng})[amenity~"^(pub|bar|biergarten|restaurant|cafe|nightclub)$"][name];` +
-        `way(around:${radius},${pos.lat},${pos.lng})[amenity~"^(pub|bar|biergarten|restaurant|cafe|nightclub)$"][name];` +
+        `node(around:${radius},${pos.lat},${pos.lng})[amenity~"^(pub|bar|biergarten|restaurant|nightclub)$"][name];` +
+        `way(around:${radius},${pos.lat},${pos.lng})[amenity~"^(pub|bar|biergarten|restaurant|nightclub)$"][name];` +
         `node(around:${radius},${pos.lat},${pos.lng})[craft=brewery][name];` +
         `);out center 80;`;
     let data: any = null;
@@ -79,6 +81,7 @@ export async function nearby(pos: LatLng, radius = 700): Promise<Place[]> {
         const t = el.tags ?? {};
         if (lat == null || !t.name) continue;
         const kind = t.amenity ?? (t.craft === 'brewery' ? 'brewery' : '');
+        if (!isAlcoholOsm(kind, t.name)) continue;
         out.push({
             name: t.name, kind, lat, lng, osm: `${el.type}/${el.id}`,
             area: t['addr:suburb'] || t['addr:district'] || area || t['addr:city'] || '',
@@ -114,7 +117,7 @@ export async function searchPlaces(q: string, near?: LatLng | null, signal?: Abo
         d = await r.json();
     } finally { clearTimeout(timer); }
     const types: Record<string, string> = { N: 'node', W: 'way', R: 'relation' };
-    return (d.features ?? []).filter((f: any) => f.properties?.name).map((f: any): Place => {
+    return (d.features ?? []).filter((f: any) => f.properties?.name && isAlcoholOsm(f.properties.osm_key === 'amenity' || f.properties.osm_key === 'craft' ? f.properties.osm_value : '', f.properties.name)).map((f: any): Place => {
         const p = f.properties;
         const [lng, lat] = f.geometry.coordinates;
         return {
@@ -139,7 +142,7 @@ export async function searchNominatim(q: string, near?: LatLng | null): Promise<
         params.set('viewbox', `${near.lng - d},${near.lat + d},${near.lng + d},${near.lat - d}`);
     }
     const res = await fetchJSON(`https://nominatim.openstreetmap.org/search?${params.toString().replace(/\+/g, '%20')}`, undefined, 10000);
-    return (res as any[]).filter(x => x.name).map((x): Place => {
+    return (res as any[]).filter(x => x.name && isAlcoholOsm(x.category === 'amenity' || x.category === 'craft' ? x.type : '', x.name)).map((x): Place => {
         const a = x.address ?? {};
         const lat = Number(x.lat), lng = Number(x.lon);
         return {

@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useLocation, useRoute } from 'preact-iso';
 import { venueKindLabel } from '../../shared/metrics';
-import { catLabel, mapsDirectionsUrl, mapsSearchUrl, meters, type CatalogPlace } from '../../shared/places';
+import { REPORT_REASONS, catLabel, mapsDirectionsUrl, mapsSearchUrl, meters, type CatalogPlace, type ReportReason } from '../../shared/places';
 import { fmtRelativeDay, fmtScore } from '../lib/format';
-import { getPlace } from '../lib/places';
+import { getPlace, reportPlace } from '../lib/places';
 import { getPosition } from '../lib/geo';
 import { request } from '../lib/api';
 import { authUser } from '../lib/auth';
 import { loadPopular } from '../lib/popular';
-import { toast, toastError } from '../state/ui';
+import { openSheet, toast, toastError } from '../state/ui';
 import { venueSummaries } from '../state/data';
 import { memberships } from '../state/session';
-import { BookmarkPlus, ChevronRight, Link as LinkIcon, MapPin, Navigation, Plus, Smartphone } from '../components/icons';
+import { BookmarkPlus, ChevronRight, Flag, Link as LinkIcon, MapPin, Navigation, Plus, Smartphone } from '../components/icons';
 import { Pint } from '../components/Pint';
 import { AsyncButton, Empty, Loading, TierChip, TopBar } from '../components/ui';
 import { PlaceStats } from './explore';
@@ -39,6 +39,24 @@ export function PlacePage() {
         presetChoice.value = choiceFromCatalog(place);
         route('/yeni');
     };
+    const report = () => openSheet({
+        title: 'Bu mekanda bir sorun mu var?',
+        render: close => (
+            <div class="menu">
+                <p class="small muted mb-12">İki farklı kişi aynı sorunu bildirince mekan Pub Skor önerilerinden çıkarılır.</p>
+                {(Object.entries(REPORT_REASONS) as [ReportReason, string][]).map(([k, label]) => (
+                    <button key={k} class="menu-item" onClick={async () => {
+                        close();
+                        if (!authUser.value) { toast('Bildirmek için giriş yap', 'info'); return; }
+                        try {
+                            const r = await reportPlace(place.id, k);
+                            toast(r.already ? 'Bunu zaten bildirmiştin' : r.hidden ? 'Teşekkürler; mekan önerilerden çıkarıldı' : 'Teşekkürler, bildirimin alındı');
+                        } catch (e) { toastError(e); }
+                    }}><Flag />{label}</button>
+                ))}
+            </div>
+        )
+    });
     const checkIn = async () => {
         try {
             const pos = await getPosition();
@@ -54,6 +72,12 @@ export function PlacePage() {
             <TopBar back="/kesfet" />
             <main class="page">
                 {place.community && <span class="badge">Topluluk ekledi</span>}
+                {place.hidden && (
+                    <div class="banner warn mb-12">
+                        <span class="b-icon"><Flag /></span>
+                        <div class="grow small">Kullanıcılar burada alkol servisi olmadığını ya da mekanın kapandığını bildirdi; Pub Skor önerilerinde gösterilmiyor.</div>
+                    </div>
+                )}
                 <h1 class="display mt-8" style={{ fontSize: '34px', lineHeight: 1.05 }}>{place.name}</h1>
                 <p class="muted mt-8">{sub}</p>
                 {place.address && <div class="vhero-meta"><MapPin size={14} />{place.address}</div>}
@@ -98,6 +122,10 @@ export function PlacePage() {
                                 <ChevronRight class="faint" />
                             </a>
                         )}
+                        <button class="list-item" onClick={report}>
+                            <span class="li-icon"><Flag /></span>
+                            <span class="li-body"><span class="li-title">Bilgi yanlış mı?</span><span class="li-sub">Alkol servisi yok, kapandı ya da bilgiler hatalı</span></span>
+                        </button>
                         {hasCrew && !crewVenue?.venue.wish && !crewVenue?.count && (
                             <button class="list-item" onClick={() => addToWishlist(choiceFromCatalog(place))}>
                                 <span class="li-icon"><BookmarkPlus /></span>
