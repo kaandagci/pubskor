@@ -21,7 +21,7 @@ import { logout, profile, updateProfile } from '../state/user';
 import { authMessage, setPassword } from '../lib/auth';
 import { applyTheme, confirmSheet, openSheet, themePref, toast, toastError, type ThemePref } from '../state/ui';
 import { Avatar } from '../components/Avatar';
-import { ChevronRight, Crown, Download, FileText, History, KeyRound, LogOut, RefreshCw, Shield, Trash2, Undo2, Upload, UserPlus, Users } from '../components/icons';
+import { ChevronRight, Crown, Download, FileText, History, KeyRound, LogOut, MessageCircle, RefreshCw, Shield, Trash2, Undo2, Upload, UserPlus, Users } from '../components/icons';
 import { AsyncButton, Segmented, Spinner, Switch, TopBar } from '../components/ui';
 import { openInvite } from './crew';
 
@@ -381,6 +381,7 @@ export function Settings() {
                         <Row icon={<FileText />} title="Gizlilik ve KVKK aydınlatma metni" href="/gizlilik" />
                         <Row icon={<FileText />} title="Kullanım koşulları" href="/kosullar" />
                         <Row icon={<FileText />} title="Yasal bilgiler ve sorumlu tüketim" href="/yasal" />
+                        <Row icon={<MessageCircle />} title="İletişim ve başvuru" sub="KVKK başvurusu, içerik bildirimi, öneri" href="/iletisim" />
                     </div>
                 </section>
 

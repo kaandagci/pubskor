@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Pub Skor · Mekan puanlama uygulaması</title>
+    <meta name="description" content="Pub Skor, arkadaş gruplarının gittikleri pub, bar, meyhane ve restoranların servisini, ortamını ve temizliğini birlikte puanladığı ücretsiz bir mekan puanlama uygulamasıdır. Alkollü içki satmaz, tanıtmaz.">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta property="og:title" content="Pub Skor · Mekanı birlikte puanlayın">
+    <meta property="og:description" content="Arkadaşlarınla gittiğiniz mekanların servisini, ortamını ve temizliğini birlikte puanlayın. Ücretsiz, reklamsız.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="/tanitim/tokens.css">
+    <link rel="stylesheet" href="/tanitim/tanitim.css">
+    <script src="/tanitim/tanitim.js" defer></script>
+</head>
+<body>
+<!-- Simgeler: Lucide (ISC lisansı) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2"/><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2"/><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-qr-code" viewBox="0 0 24 24"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-message-circle" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol><symbol id="i-armchair" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></symbol><symbol id="i-wind" viewBox="0 0 24 24"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></symbol><symbol id="i-utensils-crossed" viewBox="0 0 24 24"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></symbol><symbol id="i-cup-soda" viewBox="0 0 24 24"><path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8"/><path d="M5 8h14"/><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/><path d="m12 8 1-6h2"/></symbol><symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></symbol><symbol id="i-badge-check" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M4.929 4.929 19.07 19.071"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol></svg>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+
+<header class="nav" id="nav">
+    <div class="nav-in">
+        <a class="brand" href="/tanitim/" aria-label="Pub Skor ana sayfa">
+            <span class="mark" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="19" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="8"/><circle cx="32" cy="32" r="19" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" pathLength="100" stroke-dasharray="84 100" transform="rotate(-90 32 32)"/></svg></span>
+            Pub Skor
+        </a>
+        <nav class="nav-links" aria-label="Bölümler">
+            <a href="#nasil">Nasıl çalışır</a>
+            <a href="#ozellikler">Özellikler</a>
+            <a href="#gizlilik">Gizlilik</a>
+            <a href="#sss">SSS</a>
+        </nav>
+        <a class="btn btn-small" href="/">Uygulamayı aç</a>
+    </div>
+</header>
+
+<main id="icerik">
+    <!-- Giriş -->
+    <section class="hero">
+        <div class="hero-copy">
+            <p class="eyebrow reveal">Mekan puanlama uygulaması</p>
+            <h1 class="reveal">Mekanı <span class="grad">birlikte</span> puanlayın.</h1>
+            <p class="hero-sub reveal">Arkadaşlarınla gittiğiniz pub, bar, meyhane ve restoranların servisini, ortamını ve temizliğini herkes kendi telefonundan puanlar; Pub Skor ortak skoru anında hesaplar.</p>
+            <div class="hero-cta reveal">
+                <a class="btn" href="/kayit">Ücretsiz başla</a>
+                <a class="btn btn-ghost" href="#nasil">Nasıl çalışır?</a>
+            </div>
+            <p class="hero-note reveal">Ücretsiz · Reklamsız · 18 yaş ve üzeri</p>
+        </div>
+
+        <div class="hero-visual reveal" aria-hidden="true">
+            <div class="phone" data-parallax>
+                <div class="phone-screen">
+                    <div class="ps-status"><span>21:41</span><span class="ps-island"></span><span class="ps-bat"></span></div>
+                    <p class="ps-kind">Pub · Kadıköy</p>
+                    <p class="ps-name">Martı Pub</p>
+                    <div class="ps-actions"><span class="on">Puanla</span><span>Yol tarifi</span><span>Ara</span></div>
+                    <div class="ps-card">
+                        <span class="ring big" data-ring="84"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b data-count="8.4">8,4</b></span>
+                        <div><span class="tier" style="--c:var(--tier-great)">Çok iyi</span><p class="ps-h">Ekibinin ortalaması</p><p class="ps-s">5 kişi · 3 ziyaret</p></div>
+                    </div>
+                    <div class="ps-list">
+                        <div class="ps-row"><span>Servis hızı ve ilgi</span><b>8,2</b><i style="--w:82%"></i></div>
+                        <div class="ps-row"><span>Akustik ve sohbet</span><b>8,7</b><i style="--w:87%"></i></div>
+                        <div class="ps-row"><span>İç mekan ve oturma</span><b>8,9</b><i style="--w:89%"></i></div>
+                        <div class="ps-row"><span>Tuvalet ve hijyen</span><b>7,5</b><i style="--w:75%"></i></div>
+                    </div>
+                    <div class="ps-tabbar"><span class="on"></span><span></span><span></span><span></span></div>
+                </div>
+            </div>
+            <div class="float f1 glass"><span class="av" style="--c:var(--p1)">DE</span><span><b>Deniz puanladı</b><small>Ortam 9,0</small></span></div>
+            <div class="float f2 glass"><svg><use href="#i-users"/></svg><span><b>Canlı masa</b><small>4 kişi masada</small></span></div>
+        </div>
+    </section>
+
+    <!-- Nasıl çalışır -->
+    <section class="section" id="nasil">
+        <div class="section-head reveal">
+            <p class="eyebrow">Nasıl çalışır</p>
+            <h2>Üç adımda ortak skor.</h2>
+        </div>
+        <ol class="steps">
+            <li class="step reveal">
+                <span class="step-icon"><svg><use href="#i-qr-code"/></svg></span>
+                <span class="step-no">1</span>
+                <h3>Ekibini kur</h3>
+                <p>Ekibini oluştur, arkadaşlarını bağlantı ya da QR kodla davet et. Ekibin içeriğini yalnızca ekip üyeleri görür.</p>
+            </li>
+            <li class="step reveal">
+                <span class="step-icon"><svg><use href="#i-smartphone"/></svg></span>
+                <span class="step-no">2</span>
+                <h3>Masada herkes puanlasın</h3>
+                <p>Canlı masayı aç; herkes kendi telefonundan servisi, ortamı ve temizliği puanlasın. Hesabı olmayan arkadaşın misafir olarak katılabilir.</p>
+            </li>
+            <li class="step reveal">
+                <span class="step-icon"><svg><use href="#i-trophy"/></svg></span>
+                <span class="step-no">3</span>
+                <h3>Ortak skoru görün</h3>
+                <p>Pub Skor puanları birleştirir, ekibinin sıralamasını ve geçmişini tutar. Bir dahaki sefere nereye gideceğinize birlikte karar verin.</p>
+            </li>
+        </ol>
+    </section>
+
+    <!-- Canlı masa -->
+    <section class="section band" id="ozellikler">
+        <div class="band-copy reveal">
+            <p class="eyebrow">Canlı masa</p>
+            <h2>Dört telefon, tek skor.</h2>
+            <p>Herkes kendi puanını verir, kimse kimseyi etkilemez. Puanlar açıldığında ortak skor halka hâlinde dolar; kim hangi kritere ne verdi, yan yana görürsünüz.</p>
+        </div>
+        <div class="table-visual reveal" aria-hidden="true">
+            <div class="seat s1"><span class="ring" data-ring="80"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b>8,0</b></span><span class="av" style="--c:var(--p0)">KD</span></div>
+            <div class="seat s2"><span class="ring" data-ring="75"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b>7,5</b></span><span class="av" style="--c:var(--p1)">DE</span></div>
+            <div class="seat s3"><span class="ring" data-ring="90"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b>9,0</b></span><span class="av" style="--c:var(--p3)">EL</span></div>
+            <div class="seat s4"><span class="ring" data-ring="85"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b>8,5</b></span><span class="av" style="--c:var(--p4)">MA</span></div>
+            <div class="center"><span class="ring huge" data-ring="83"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b data-count="8.3">8,3</b></span><span class="tier" style="--c:var(--tier-great)">Çok iyi</span></div>
+        </div>
+    </section>
+
+    <!-- Kriterler -->
+    <section class="section">
+        <div class="section-head reveal">
+            <p class="eyebrow">Kriterler</p>
+            <h2>Ölçtüğün şey: mekan deneyimi.</h2>
+            <p>Ekibin, kendisi için önemli olan kriterleri seçer. Her kriterin ağırlığı ortak skora yansır.</p>
+        </div>
+        <ul class="criteria reveal">
+            <li><svg><use href="#i-timer"/></svg>Servis hızı ve ilgi</li>
+            <li><svg><use href="#i-receipt"/></svg>Fiyat / performans</li>
+            <li><svg><use href="#i-message-circle"/></svg>Akustik ve sohbet</li>
+            <li><svg><use href="#i-armchair"/></svg>İç mekan ve oturma</li>
+            <li><svg><use href="#i-wind"/></svg>Ambiyans, müzik ve hava</li>
+            <li><svg><use href="#i-sparkles"/></svg>Tuvalet ve hijyen</li>
+            <li><svg><use href="#i-utensils-crossed"/></svg>Yemek ve meze</li>
+            <li><svg><use href="#i-cup-soda"/></svg>Alkolsüz seçenekler</li>
+        </ul>
+    </section>
+
+    <!-- Keşfet -->
+    <section class="section">
+        <div class="explore reveal">
+            <div>
+                <p class="eyebrow">Keşfet</p>
+                <h2>İstanbul'un her ilçesi.</h2>
+                <p>Açık veriden derlenen mekan listesiyle aradığın yeri adıyla bul, yakınındakileri gör, ilçe ilçe gez. “Bu hafta çok gidilenler” listesi, en az üç farklı ekibin anonim ziyaretlerinden hesaplanır.</p>
+            </div>
+            <div class="stats">
+                <div class="stat"><b data-count="39">39</b><span>ilçe</span></div>
+                <div class="stat"><b data-count="3900" data-prefix="~">~3.900</b><span>mekan</span></div>
+                <div class="stat"><b data-count="3">3</b><span>ekipten az ziyaret alan mekan listelenmez</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gizlilik -->
+    <section class="section" id="gizlilik">
+        <div class="section-head reveal">
+            <p class="eyebrow">Gizlilik</p>
+            <h2>Puanların ekibinde kalır.</h2>
+        </div>
+        <div class="tiles">
+            <article class="tile reveal"><span class="tile-icon"><svg><use href="#i-lock"/></svg></span><h3>Yalnızca ekibin görür</h3><p>Ziyaretler, puanlar, notlar ve fotoğraflar yalnızca ekip üyelerine görünür.</p></article>
+            <article class="tile reveal"><span class="tile-icon"><svg><use href="#i-map-pin"/></svg></span><h3>Konum geçmişi yok</h3><p>Yakındaki mekanlar cihazında hesaplanır; konum geçmişin tutulmaz.</p></article>
+            <article class="tile reveal"><span class="tile-icon"><svg><use href="#i-eye-off"/></svg></span><h3>Reklam ve takip yok</h3><p>Çerez yok, reklam yok, kullanım takibi yok.</p></article>
+            <article class="tile reveal"><span class="tile-icon"><svg><use href="#i-download"/></svg></span><h3>Verin senin</h3><p>Verilerini istediğin an indir; hesabını tek dokunuşla sil.</p></article>
+        </div>
+    </section>
+
+    <!-- Ne değildir -->
+    <section class="section">
+        <article class="not reveal" aria-labelledby="not-title">
+            <span class="not-icon"><svg><use href="#i-ban"/></svg></span>
+            <div>
+                <p class="eyebrow">Açıkça söyleyelim</p>
+                <h2 id="not-title">Pub Skor bir puanlama uygulamasıdır. Başka bir şey değildir.</h2>
+                <ul>
+                    <li><svg><use href="#i-x"/></svg>Alkollü içki satmaz, sipariş almaz, satışa ya da teslimata aracılık etmez.</li>
+                    <li><svg><use href="#i-x"/></svg>Alkollü içki reklamı, tanıtımı, kampanyası ya da promosyonu yapmaz; marka, logo, ürün görseli ya da fiyat göstermez.</li>
+                    <li><svg><use href="#i-x"/></svg>İşletmelerden ücret, komisyon ya da sponsorluk almaz; sıralamalar satın alınamaz.</li>
+                    <li><svg><use href="#i-x"/></svg>Alkol tüketimini özendirmez, ödüllendirmez; içki sayısı tutulmaz, yarıştırılmaz.</li>
+                </ul>
+                <p class="not-foot"><svg><use href="#i-car"/></svg>Alkollü araç kullanma. Bağımlılıkla ilgili ücretsiz destek: Yeşilay Danışmanlık Merkezi (YEDAM) 115.</p>
+            </div>
+        </article>
+    </section>
+
+    <!-- SSS -->
+    <section class="section" id="sss">
+        <div class="section-head reveal"><p class="eyebrow">Sık sorulanlar</p><h2>Merak edilenler.</h2></div>
+        <div class="faq reveal">
+            <details><summary>Pub Skor ücretli mi?<svg><use href="#i-chevron-down"/></svg></summary><p>Hayır. Pub Skor ücretsizdir ve reklam göstermez.</p></details>
+            <details><summary>Kimler kullanabilir?<svg><use href="#i-chevron-down"/></svg></summary><p>Alkollü içki servis edilen mekanların değerlendirmelerini içerdiği için yalnızca 18 yaş ve üzeri kişiler kullanabilir.</p></details>
+            <details><summary>Mekanlar listede olmak için ücret ödüyor mu?<svg><use href="#i-chevron-down"/></svg></summary><p>Hayır. Mekan listesi açık veriden derlenir; hiçbir işletmeden ücret, komisyon ya da sponsorluk alınmaz. Bir mekanın listede olması tanıtım ya da tavsiye değildir.</p></details>
+            <details><summary>Uygulamayı nasıl yüklerim?<svg><use href="#i-chevron-down"/></svg></summary><p>Pub Skor bir web uygulamasıdır; mağazadan indirmen gerekmez. iPhone'da Safari'de Paylaş → Ana Ekrana Ekle'ye, Android'de Chrome'da “Uygulamayı yükle”ye dokun.</p></details>
+            <details><summary>Bir mekanın bilgisi yanlışsa?<svg><use href="#i-chevron-down"/></svg></summary><p>Mekan sayfasındaki “Bilgi yanlış mı?” ile bildir ya da <a href="/iletisim?konu=mekan">iletişim formunu</a> kullan. İki farklı kişinin “alkol servisi yok” ya da “kapandı” bildirimi mekanı listeden düşürür.</p></details>
+            <details><summary>Verilerim nerede, nasıl silerim?<svg><use href="#i-chevron-down"/></svg></summary><p>Veriler barındırma sağlayıcısının sunucularında saklanır; ayrıntılar <a href="/gizlilik">aydınlatma metninde</a>. Hesabını Ayarlar'dan silebilir, KVKK başvurunu <a href="/iletisim?konu=kvkk">başvuru formundan</a> yapabilirsin.</p></details>
+        </div>
+    </section>
+
+    <!-- Son çağrı -->
+    <section class="section final reveal">
+        <h2>Bu akşam masada puanlayın.</h2>
+        <p>Ücretsiz hesabını oluştur, ekibini davet et.</p>
+        <div class="hero-cta"><a class="btn" href="/kayit">Ücretsiz başla</a><a class="btn btn-ghost" href="/kesfet">Önce mekanlara göz at</a></div>
+    </section>
+</main>
+
+<footer class="footer">
+    <div class="footer-in">
+        <nav class="footer-links" aria-label="Yasal">
+            <a href="/gizlilik">Gizlilik ve KVKK</a>
+            <a href="/kosullar">Kullanım koşulları</a>
+            <a href="/yasal">Yasal bilgiler</a>
+            <a href="/iletisim">İletişim ve başvuru</a>
+        </nav>
+        <p>18+ · Pub Skor bir mekan puanlama uygulamasıdır. Alkollü içki satmaz, tanıtmaz, reklamını yapmaz; işletmelerden ücret almaz.</p>
+        <p>Mekan verisi: Overture Maps Foundation (CDLA-Permissive-2.0, Apache 2.0). Harita: © OpenStreetMap katkıcıları. Simgeler: Lucide (ISC).</p>
+        <p>© 2026 Pub Skor</p>
+    </div>
+</footer>
+</body>
+</html>

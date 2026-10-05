@@ -8,8 +8,13 @@ export const LEGAL = {
     controller: '[Veri sorumlusunun adı / unvanı]',
     /** Tebligata elverişli adres. */
     address: '[Adres]',
-    /** Başvuru ve şikayetler için e-posta. */
-    email: '[iletisim@alanadiniz.com]',
+    /**
+     * Başvuru ve şikayet kanalı: uygulama içi form (KVKK Başvuru Tebliği m.5: "başvuru amacına yönelik geliştirilmiş
+     * bir yazılım ya da uygulama"). Sitede e-posta adresi yayımlanmaz; kayıtlar Netlify Forms panelinde görülür.
+     */
+    contact: '/iletisim',
+    /** İletişim formu kayıtlarının saklama süresi. */
+    contactRetention: 'başvurunun sonuçlanmasından itibaren 2 yıl',
     /** Kayıtlı elektronik posta (varsa). */
     kep: '',
     /** Sunucu ve veritabanı sağlayıcısı (yurt dışı aktarım bilgisi için). */

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Pub Skor formları</title>
+</head>
+<body>
+    <!-- Netlify Forms tanımı: uygulama içindeki iletişim formu (src/features/contact.tsx) bu adla ve bu alanlarla
+         buraya gönderir. Netlify yayın sırasında bu dosyayı okuyup formu tanır; alan eklerken burayı da güncelle. -->
+    <form name="iletisim" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+        <input name="bot-field">
+        <input name="referans">
+        <input name="konu">
+        <input name="ad">
+        <input name="eposta" type="email">
+        <input name="telefon">
+        <input name="kimlik">
+        <textarea name="adres"></textarea>
+        <textarea name="haklar"></textarea>
+        <input name="baglanti">
+        <textarea name="mesaj"></textarea>
+        <input name="hesap">
+        <input name="yanit_suresi">
+        <input name="aydinlatma">
+        <input name="tarih">
+    </form>
+</body>
+</html>

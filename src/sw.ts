@@ -61,7 +61,8 @@ sw.addEventListener('fetch', (event: FetchEvent) => {
         event.respondWith((async () => {
             try {
                 const res = await fetch(req);
-                if (res.ok) void caches.open(SHELL).then(c => c.put('/', res.clone()));
+                // Yalnızca uygulama sayfaları kabuk olarak saklanır (statik tanıtım sayfası değil)
+                if (res.ok && !url.pathname.startsWith('/tanitim')) void caches.open(SHELL).then(c => c.put('/', res.clone()));
                 return res;
             } catch {
                 return (await caches.match('/')) ?? new Response('Çevrimdışı', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } });

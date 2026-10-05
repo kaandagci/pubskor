@@ -1,4 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import preact from '@preact/preset-vite';
@@ -21,6 +21,19 @@ function devApi(): Plugin {
         apply: 'serve',
         configureServer(server: ViteDevServer) {
             server.middlewares.use(async (req, res, next) => {
+                // Statik tanıtım sayfası: Netlify'da /tanitim/ doğrudan public/tanitim/index.html'i sunar; yerelde de öyle olsun
+                if (req.url === '/tanitim' || req.url === '/tanitim/') req.url = '/tanitim/index.html';
+                // Netlify Forms yerelde yok: iletişim formu gönderimleri .data/forms.jsonl dosyasına yazılır
+                if (req.method === 'POST' && req.url === '/__forms.html') {
+                    const chunks: Buffer[] = [];
+                    for await (const c of req) chunks.push(c as Buffer);
+                    const fields = Object.fromEntries(new URLSearchParams(Buffer.concat(chunks).toString('utf8')));
+                    await mkdir('.data', { recursive: true });
+                    await appendFile('.data/forms.jsonl', JSON.stringify(fields) + '\n');
+                    res.statusCode = 200;
+                    res.end('ok');
+                    return;
+                }
                 if (!req.url?.startsWith('/api/')) return next();
                 try {
                     if (!kv) {

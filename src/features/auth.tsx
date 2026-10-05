@@ -75,7 +75,7 @@ export function Welcome() {
             <div class="brand-word"><span class="brand-mark"><Pint score={8} size={14} /></span>Pub Skor</div>
             <div class="welcome-art"><Pint score={8.4} size={150} pour bubbles /></div>
             <h1>Masadaki herkesin puanı, <em>tek skor.</em></h1>
-            <p>Pub, bar, meyhane ya da restoran: arkadaşlarınla gittiğiniz mekanları birlikte puanlayın, İstanbul'da bu hafta nerelerin çok gidildiğini görün.</p>
+            <p>Mekan puanlama uygulaması: arkadaşlarınla gittiğiniz pub, bar, meyhane ve restoranların servisini, ortamını ve temizliğini birlikte puanlayın.</p>
             {legacy && (
                 <div class="banner mt-16">
                     <span class="b-icon"><Users /></span>
@@ -87,6 +87,7 @@ export function Welcome() {
                 <a href="/giris" class="btn btn-secondary btn-lg btn-block">Giriş yap</a>
                 <a href="/kesfet" class="btn btn-ghost btn-block"><Compass />Önce mekanlara göz at</a>
             </div>
+            <p class="tiny faint center mt-24">18+ · Pub Skor alkollü içki satmaz, tanıtmaz, reklamını yapmaz. <a class="link-btn" href="/tanitim/" target="_top">Pub Skor nedir?</a> · <a class="link-btn" href="/iletisim">İletişim</a></p>
         </div>
     );
 }

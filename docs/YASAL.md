@@ -10,7 +10,10 @@
 | KVKK (6698) | Uyum gerekli | Aydınlatma metni, açık rıza ayarları, veri dışa aktarma ve silme, saklama süreleri |
 | Yurt dışına veri aktarımı (KVKK m.9) | **Aksiyon gerekli** | Sunucular ABD'de (Netlify). Standart sözleşme imzalanıp 5 iş günü içinde Kurul'a bildirilmeli. |
 | Çerezler | Uyumlu | Çerez yok; yalnızca zorunlu yerel depolama var. Zorunlu olmayan araçlar açık rızaya bağlı. |
-| 5651 s. Kanun | Uyum gerekli | Kimlik ve iletişim bilgileri `src/config.ts` dosyasından gösteriliyor. Bildirim adresi var. |
+| 5651 s. Kanun | Uyum gerekli | Kimlik bilgileri `src/config.ts` dosyasından gösteriliyor. Bildirimler uygulama içi formdan (`/iletisim`) alınıyor; kişilik hakkı bildirimlerine 24 saat içinde yanıt verilmeli (m.9). |
+| İletişim ve başvuru kanalı | Hazır (Netlify'da açılmalı) | Sitede e-posta adresi yok; tek kanal `/iletisim` formu. KVKK başvurusu, Veri Sorumlusuna Başvuru Usul ve Esasları Hakkında Tebliğ m.5'teki "başvuru amacına yönelik geliştirilmiş bir yazılım ya da uygulama" yoluyla yapılır; Tebliğ'in istediği ad soyad, T.C. kimlik no ve tebligat adresi yalnızca KVKK konusunda istenir. Gönderimler Netlify Forms'a gider (ücretsiz), bildirim site sahibinin Netlify hesabındaki e-postaya düşer. Formun kendi aydınlatma bölümü `/gizlilik#iletisim`. |
+| Veri sorumlusunun kimliği | **Eksik** | Form e-postanın yerini tutar ama veri sorumlusunun adını / unvanını ve adresini tutmaz. KVKK m.10 aydınlatmada veri sorumlusunun kimliğini, 5651 m.3 içerik sağlayıcının tanıtıcı bilgilerini ister. `src/config.ts → LEGAL.controller` ve `address` yayından önce doldurulmalı. Kişisel adres paylaşmak istenmiyorsa şahıs şirketi ya da sanal ofis adresi kullanılabilir. |
+| Alkol tanıtımı yapılmadığı beyanı | Hazır | Kullanım koşulları m.2, "Yasal bilgiler" sayfasının ilk bölümü, karşılama ekranı, yaş kapısı ve tanıtım sayfasındaki "Pub Skor ne değildir?" bölümü: içki satışı, marka, fiyat, kampanya, sponsorluk ve tüketimi özendiren öğe yok. |
 | Reklam yönetmeliği (örtülü reklam) | Hazır | Her reklam "Reklam" etiketli, `rel="sponsored"`. Varsayılan olarak kapalı. |
 | Yaş sınırı | Uyumlu | İlk açılışta 18 yaş beyanı. Mağaza dağıtımında 18+ derecelendirme gerekir. |
 | VERBİS | Muhtemelen muaf | Çalışan sayısı 50'den az ve bilanço 100 milyon TL'den küçükse kayıt gerekmiyor. |
@@ -20,7 +23,7 @@
 | Yalnızca içki mekanı önerme | Dikkat | Uygulama yalnızca alkol servis eden mekanları listeliyor. Bu bir mekan rehberi; ürün ya da marka tanıtımı yok. Yine de: içecek markası, fiyat kampanyası, "happy hour" ya da indirim duyurusu listelenmemeli; mekanlardan ücretli öne çıkarma alınmamalı; ifadeler nötr kalmalı ("çok gidilen", "en iyi içki" değil); 18+ kapısı korunmalı. Reklam açılmadan önce avukata sorulmalı. |
 | Mekan sitelerinin menü kontrolü | Düşük risk | Yalnızca mekanların kendi web siteleri ve bağlantı verdikleri menü sayfaları okunur. `robots.txt` engeline uyulur, kendini tanıtan bir tarayıcı adı (PubSkorBot) kullanılır, site başına bir ana sayfa ve en fazla iki menü sayfası okunur, sonuç 90 gün önbellekte tutulur, içerik saklanmaz (yalnızca "içki var / yok / bilinmiyor" kararı). Google Haritalar, Yemeksepeti ve sosyal medya hiç okunmaz; bunların koşulları otomatik veri toplamayı ve onlardan mekan veritabanı oluşturmayı yasaklar. |
 | Anonim popülerlik | Düşük risk | HMAC'lenmiş grup özetleri, en az 3 grup eşiği, 60/90 gün saklama, kurucu kapatabilir. Aydınlatma metninde ayrı bölüm. |
-| Topluluk mekanları | 5651 kapsamında yer sağlayıcılık | Kullanıcılar mekan adı ve konumu ekleyebiliyor. Kişi başı günlük sınır var. Bildirim e-postasından gelen yanıltıcı kayıtlar gizlenmeli (`places/community` belgesinde `hidden: true`). |
+| Topluluk mekanları | 5651 kapsamında yer sağlayıcılık | Kullanıcılar mekan adı ve konumu ekleyebiliyor. Kişi başı günlük sınır var. İletişim formundan gelen yanıltıcı kayıt bildirimlerinde kayıt gizlenmeli (`places/community` belgesinde `hidden: true`). |
 
 ## 1. Alkol reklam ve tanıtım yasağı
 
@@ -63,7 +66,7 @@ Telefon numarası toplanmıyor.
 
 **Uygulamada:**
 
-- Aydınlatma metni: `/gizlilik` sayfası (`src/features/legal.tsx`). **`src/config.ts` içindeki `LEGAL` alanları (veri sorumlusu adı, adresi, e-postası) doldurulmalı.**
+- Aydınlatma metni: `/gizlilik` sayfası (`src/features/legal.tsx`). **`src/config.ts` içindeki `LEGAL` alanları (veri sorumlusu adı ve adresi) doldurulmalı.** Başvuru kanalı e-posta değil, uygulama içi form (`/iletisim`); başvurular 30 gün içinde, yanıt formda yazılan e-postaya gönderilerek cevaplanmalı. Yanıt için kişisel olmayan ayrı bir e-posta hesabı açılabilir; bu adres sitede yayımlanmaz.
 - Açık rıza: Ayarlar → Gizlilik bölümünde, varsayılan olarak kapalı.
 - İlgili kişi hakları (m.11): dışa aktarma (JSON/CSV), ekipten ayrılma, ekibi silme, cihazdan çıkış. E-posta başvurularına 30 gün içinde yanıt verilmeli.
 - Saklama süreleri:
@@ -100,7 +103,7 @@ Bu yüzden şu an çerez onay bandı gerekmiyor. Reklam ya da analiz aracı ekle
 
 İçerik ve yer sağlayıcıların tanıtıcı bilgilerini kullanıcıların erişebileceği şekilde güncel tutması gerekiyor. Bu bilgiler `/yasal`, `/gizlilik` ve `/kosullar` sayfalarında `src/config.ts → LEGAL` alanından gösteriliyor.
 
-Hukuka aykırı içerik bildirimi için e-posta adresi yayınlanmalı ve bildirimler makul sürede değerlendirilmeli. Kurucular ekipten üye çıkarabiliyor, ziyaretleri silebiliyor ve paylaşım bağlantılarını kaldırabiliyor.
+Hukuka aykırı içerik ve kişilik hakkı bildirimleri `/iletisim` formundan ("Hukuka aykırı içerik / kişilik hakkı" konusu) alınır ve en geç 24 saat içinde yanıtlanmalı (m.9). Kurucular ekipten üye çıkarabiliyor, ziyaretleri silebiliyor ve paylaşım bağlantılarını kaldırabiliyor.
 
 Ekip içerikleri herkese açık değil; açık olan tek içerik kullanıcının bilerek oluşturduğu paylaşım bağlantıları.
 
@@ -123,10 +126,11 @@ Ekip içerikleri herkese açık değil; açık olan tek içerik kullanıcının 
 
 ## 8. Yayından önce yapılacaklar
 
-- [ ] `src/config.ts → LEGAL`: veri sorumlusu adı veya unvanı, adres, e-posta (varsa KEP)
+- [ ] `src/config.ts → LEGAL`: veri sorumlusu adı veya unvanı ve adres (varsa KEP). E-posta gerekmez; başvurular `/iletisim` formundan.
+- [ ] Netlify → Project configuration → Forms: **Enable form detection** (form tanımı `public/__forms.html`), ardından Forms → Form notifications → Email notification ile `iletisim` formu için bildirim e-postası. Kayıtlar Forms → iletisim altında görünür.
 - [ ] Netlify ile KVKK standart sözleşmesi ve 5 iş günü içinde Kurul'a bildirim (ya da Türkiye'de barındırma)
 - [ ] Aydınlatma metni ve kullanım koşullarının avukat kontrolü
-- [ ] Kendi alan adı (ör. `.com.tr`) ve iletişim e-postası
+- [ ] Kendi alan adı (ör. `.com.tr`). İletişim e-postası zorunlu değil (başvurular formdan), ama başvurulara yanıt vermek için kişisel olmayan ayrı bir e-posta hesabı önerilir.
 - [ ] Netlify panelinde `ADMIN_KEY` ortam değişkeni (eski arşivi içe aktarırken gerekir)
 - [ ] Netlify panelinde `STATS_SALT` ortam değişkeni (uzun, rastgele; popülerlik özetlerinin tuzu, bir kez belirlenip değiştirilmemeli)
 - [ ] Netlify Identity: Enable, Registration open, Google (varsayılan ayar), e-posta şablonları `/identity/*.html`

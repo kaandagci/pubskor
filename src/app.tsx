@@ -28,11 +28,13 @@ import { CrewPage, PersonPage } from './features/crew';
 import { Settings } from './features/settings';
 import { SharedPage } from './features/shared';
 import { AgeGate, LegalInfo, Privacy, Terms } from './features/legal';
+import { Contact } from './features/contact';
 
 const MapPage = lazy(() => import('./features/map'));
 
 const TAB_ROUTES = [/^\/$/, /^\/siralama/, /^\/harita/, /^\/ekip$/, /^\/mekan\//, /^\/yer\//, /^\/kesfet/, /^\/kisi\//, /^\/oneri/, /^\/ayarlar/];
-const LEGAL_ROUTES = [/^\/gizlilik/, /^\/kosullar/, /^\/yasal/];
+/** Yasal sayfalar ve iletişim formu: hesapsız ve yaş onayı olmadan açılır (ör. velinin başvurusu). */
+const LEGAL_ROUTES = [/^\/gizlilik/, /^\/kosullar/, /^\/yasal/, /^\/iletisim/];
 /** Hesapsız açılabilen sayfalar (canlı masaya misafir katılımı, paylaşım, keşif, davet önizleme). */
 const OPEN_ROUTES = [...LEGAL_ROUTES, /^\/hosgeldin/, /^\/giris/, /^\/kayit/, /^\/sifre/, /^\/masa/, /^\/m\//, /^\/s\//, /^\/yer\//, /^\/kesfet/, /^\/katil/, /^\/bagla/];
 const AUTH_PAGES = [/^\/hosgeldin/, /^\/giris/, /^\/kayit/];
@@ -124,6 +126,7 @@ function Shell() {
                     <Route path="/gizlilik" component={Privacy} />
                     <Route path="/kosullar" component={Terms} />
                     <Route path="/yasal" component={LegalInfo} />
+                    <Route path="/iletisim" component={Contact} />
                     <Route default component={NotFound} />
                 </Router>
             </ErrorBoundary>

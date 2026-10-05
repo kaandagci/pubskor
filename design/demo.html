@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <title>Pub Skor · Tasarım önizlemesi</title>
+    <link rel="stylesheet" href="./tokens.css">
+    <link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+<!-- Simgeler: Lucide (ISC lisansı) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-house" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2"/><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2"/><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></symbol><symbol id="i-navigation" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol><symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol><symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-message-circle" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></symbol><symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-armchair" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol><symbol id="i-wind" viewBox="0 0 24 24"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></symbol><symbol id="i-badge-check" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol></svg>
+<div class="stage">
+    <aside class="panel" aria-label="Tasarım notları">
+        <div class="panel-brand">
+            <span class="app-icon" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="19" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="7"/><circle cx="32" cy="32" r="19" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="84 100" transform="rotate(-90 32 32)"/></svg></span>
+            <div><p class="eyebrow">Tasarım önizlemesi</p><h1>Pub Skor, Apple diliyle</h1></div>
+        </div>
+        <p class="lead">iOS 26'nın cam malzemesi, sistem renkleri, büyük başlıklar ve yay animasyonları. Sağdaki telefonu kullan: sekmeler arasında gez, bir mekana dokun, soldan kaydırarak geri dön, “Puanla” ile paneli aç.</p>
+
+        <section class="panel-block">
+            <h2>Görünüm</h2>
+            <div class="seg" data-seg="theme" role="group" aria-label="Görünüm">
+                <span class="seg-lens"></span>
+                <button data-value="system" aria-pressed="true">Sistem</button>
+                <button data-value="light" aria-pressed="false">Açık</button>
+                <button data-value="dark" aria-pressed="false">Koyu</button>
+            </div>
+        </section>
+
+        <section class="panel-block">
+            <h2>Neler değişiyor?</h2>
+            <ul class="changes">
+                <li><b>Bardak yerine skor halkası.</b> Uygulamanın bir puanlama uygulaması olduğu ilk bakışta anlaşılır; arayüzde hiçbir içki görseli kalmaz. Uygulama simgesi de halka olur (yukarıda).</li>
+                <li><b>Sistem fontu ve Dinamik Yazı boyutları.</b> iPhone ve Mac'te SF Pro, Android'de platformun kendi fontu. Skorlar yuvarlak SF Pro Rounded ile.</li>
+                <li><b>Apple sistem renkleri.</b> Vurgu sistem turuncusu; koyu temada gerçek siyah zemin, katmanlar yükseldikçe açılan griler.</li>
+                <li><b>Cam malzeme.</b> Yüzen sekme çubuğu ve cam düğmeler; aşağı kaydırınca sekme çubuğu küçülür, içerik öne çıkar.</li>
+                <li><b>Büyük başlıklar.</b> Kaydırınca başlık ortadaki küçük başlığa geçer, üst kenar yumuşakça bulanıklaşır.</li>
+                <li><b>Yay animasyonları.</b> Sayfa geçişleri, panel, düğmeler ve skor halkası SwiftUI'nin yay eğrileriyle; “Hareketi azalt” açıksa kapanır.</li>
+            </ul>
+        </section>
+
+        <section class="panel-block">
+            <h2>Renk tokenları</h2>
+            <p class="panel-note">Değerler seçili temaya göre güncellenir.</p>
+            <div class="swatches" data-swatches></div>
+        </section>
+
+        <section class="panel-block">
+            <h2>Hareket</h2>
+            <div data-motion></div>
+        </section>
+        <p class="panel-foot">Örnek veriler; mekan adları temsilidir. Bu sayfa yalnızca önizlemedir, yayına girmez.</p>
+    </aside>
+
+    <div class="device" id="device">
+        <div class="screen" id="screen">
+            <div class="island" aria-hidden="true"></div>
+            <div class="statusbar" aria-hidden="true">
+                <span class="sb-time">21:41</span>
+                <span class="sb-icons">
+                    <svg viewBox="0 0 18 12" width="18" height="12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+                    <svg viewBox="0 0 16 12" width="16" height="12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0z"/><path d="M3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.1 1.1a5 5 0 0 0-7 0z"/><path d="M1.2 4.6a9.6 9.6 0 0 1 13.6 0l-1.1 1.1a8 8 0 0 0-11.4 0z"/></svg>
+                    <svg viewBox="0 0 27 13" width="27" height="13"><rect x=".5" y=".5" width="23" height="12" rx="3.8" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2.4"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" opacity=".45"/></svg>
+                </span>
+            </div>
+
+            <div class="views" id="views">
+                <!-- Akış -->
+                <section class="view" data-view="akis" data-title="Akış">
+                    <header class="navbar">
+                        <div class="nav-edge"></div>
+                        <div class="nav-row">
+                            <span class="nav-side"></span>
+                            <span class="nav-title">Akış</span>
+                            <span class="nav-side right">
+                                <button class="gbtn glass press" data-action="rate" aria-label="Yeni ziyaret"><svg><use href="#i-plus"/></svg></button>
+                            </span>
+                        </div>
+                    </header>
+                    <div class="scroller">
+                        <div class="large-head">
+                            <button class="crew-switch press">Cuma Ekibi <svg><use href="#i-chevron-right"/></svg></button>
+                            <h1 class="large-title">Akış</h1>
+                        </div>
+                        <article class="hero-card">
+                            <span class="hero-icon"><svg><use href="#i-users"/></svg></span>
+                            <div class="hero-body">
+                                <h2>Bu akşam masada mısınız?</h2>
+                                <p>Herkes kendi telefonundan puanlasın, ortak skor anında çıksın.</p>
+                                <button class="btn-capsule press" data-action="toast" data-toast="Canlı masa açıldı · Kod 4821">Canlı masa aç</button>
+                            </div>
+                        </article>
+                        <div class="sec-head"><h2>Son ziyaretler</h2><button class="link press">Tümü</button></div>
+                        <div class="group" data-list="visits"></div>
+                        <div class="sec-head"><h2>Bu ay</h2></div>
+                        <div class="tiles">
+                            <div class="tile"><span class="k">Ziyaret</span><span class="v" data-count="12">12</span></div>
+                            <div class="tile"><span class="k">Ortalama</span><span class="v" data-count="7.8" data-decimals="1">7,8</span></div>
+                            <div class="tile"><span class="k">En sık</span><span class="v small">Kadıköy</span></div>
+                        </div>
+                        <p class="fineprint">Pub Skor bir mekan puanlama uygulamasıdır. Alkollü içki satmaz, tanıtmaz, reklamını yapmaz. 18+</p>
+                    </div>
+                </section>
+
+                <!-- Keşfet -->
+                <section class="view" data-view="kesfet" data-title="Keşfet" hidden>
+                    <header class="navbar">
+                        <div class="nav-edge"></div>
+                        <div class="nav-row"><span class="nav-side"></span><span class="nav-title">Keşfet</span><span class="nav-side right"><button class="gbtn glass press" aria-label="Harita"><svg><use href="#i-map-pin"/></svg></button></span></div>
+                    </header>
+                    <div class="scroller">
+                        <div class="large-head"><h1 class="large-title">Keşfet</h1></div>
+                        <label class="search"><svg><use href="#i-search"/></svg><input type="search" placeholder="Mekan ya da semt ara" aria-label="Mekan ya da semt ara"></label>
+                        <div class="seg seg-wide mt-12" data-seg="period" role="group" aria-label="Zaman aralığı">
+                            <span class="seg-lens"></span>
+                            <button data-value="today" aria-pressed="false">Bugün</button>
+                            <button data-value="week" aria-pressed="true">Bu hafta</button>
+                            <button data-value="month" aria-pressed="false">Bu ay</button>
+                        </div>
+                        <div class="chips" role="group" aria-label="Bölge">
+                            <button class="chip press" aria-pressed="false">Yakınımda</button>
+                            <button class="chip press" aria-pressed="true">Kadıköy</button>
+                            <button class="chip press" aria-pressed="false">Beyoğlu</button>
+                            <button class="chip press" aria-pressed="false">Beşiktaş</button>
+                            <button class="chip press" aria-pressed="false">Şişli</button>
+                            <button class="chip press" aria-pressed="false">Tüm İstanbul</button>
+                        </div>
+                        <div class="sec-head"><h2>Çok gidilenler</h2><span class="sec-sub" data-period-label>Bu hafta</span></div>
+                        <div class="group" data-list="popular"></div>
+                        <p class="fineprint">Liste, en az 3 farklı ekibin anonim ziyaretlerinden hesaplanır. Bir mekanın listede olması tanıtım ya da tavsiye değildir.</p>
+                    </div>
+                </section>
+
+                <!-- Sıralama -->
+                <section class="view" data-view="siralama" data-title="Sıralama" hidden>
+                    <header class="navbar">
+                        <div class="nav-edge"></div>
+                        <div class="nav-row"><span class="nav-side"></span><span class="nav-title">Sıralama</span><span class="nav-side right"><button class="gbtn glass press" aria-label="Diğer"><svg><use href="#i-ellipsis"/></svg></button></span></div>
+                    </header>
+                    <div class="scroller">
+                        <div class="large-head"><h1 class="large-title">Sıralama</h1></div>
+                        <div class="seg seg-wide" data-seg="range" role="group" aria-label="Dönem">
+                            <span class="seg-lens"></span>
+                            <button data-value="all" aria-pressed="true">Tüm zamanlar</button>
+                            <button data-value="year" aria-pressed="false">Bu yıl</button>
+                        </div>
+                        <div class="podium" data-list="podium"></div>
+                        <div class="group mt-16" data-list="ranking"></div>
+                        <p class="fineprint">Sıralama yalnızca ekibinin puanlarından oluşur ve yalnızca ekibine görünür.</p>
+                    </div>
+                </section>
+
+                <!-- Ekip -->
+                <section class="view" data-view="ekip" data-title="Ekip" hidden>
+                    <header class="navbar">
+                        <div class="nav-edge"></div>
+                        <div class="nav-row"><span class="nav-side"></span><span class="nav-title">Ekip</span><span class="nav-side right"><button class="gbtn glass press" aria-label="Davet et"><svg><use href="#i-plus"/></svg></button></span></div>
+                    </header>
+                    <div class="scroller">
+                        <div class="large-head"><h1 class="large-title">Ekip</h1></div>
+                        <article class="crew-card">
+                            <div class="avs big" data-avatars="0,1,2,3,4"></div>
+                            <h2>Cuma Ekibi</h2>
+                            <p>5 üye · 42 ziyaret · 2023'ten beri</p>
+                        </article>
+                        <div class="group mt-16">
+                            <button class="row press" data-action="toast" data-toast="Davet bağlantısı kopyalandı"><span class="row-icon tint"><svg><use href="#i-users"/></svg></span><span class="row-body"><span class="row-title">Arkadaşını davet et</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                            <button class="row press"><span class="row-icon gray"><svg><use href="#i-trophy"/></svg></span><span class="row-body"><span class="row-title">Ekip istatistikleri</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                        </div>
+                        <div class="sec-head"><h2>Görünüm</h2></div>
+                        <div class="seg seg-wide" data-seg="theme" role="group" aria-label="Görünüm">
+                            <span class="seg-lens"></span>
+                            <button data-value="system" aria-pressed="true">Sistem</button>
+                            <button data-value="light" aria-pressed="false">Açık</button>
+                            <button data-value="dark" aria-pressed="false">Koyu</button>
+                        </div>
+                        <div class="sec-head"><h2>Hakkında</h2></div>
+                        <div class="group">
+                            <button class="row press"><span class="row-icon gray"><svg><use href="#i-shield-check"/></svg></span><span class="row-body"><span class="row-title">Gizlilik ve KVKK</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                            <button class="row press"><span class="row-icon gray"><svg><use href="#i-file-text"/></svg></span><span class="row-body"><span class="row-title">Kullanım koşulları</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                            <button class="row press"><span class="row-icon gray"><svg><use href="#i-message-circle"/></svg></span><span class="row-body"><span class="row-title">İletişim ve başvuru</span><span class="row-sub">KVKK başvurusu, içerik bildirimi</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                            <button class="row press" data-push="tokenlar"><span class="row-icon tint"><svg><use href="#i-sparkles"/></svg></span><span class="row-body"><span class="row-title">Tasarım tokenları</span><span class="row-sub">Renkler ve hareket</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                        </div>
+                        <p class="fineprint">Pub Skor bir mekan puanlama uygulamasıdır. Alkollü içki satmaz, tanıtmaz, reklamını yapmaz; işletmelerden ücret almaz. 18 yaş ve üzeri içindir.</p>
+                    </div>
+                </section>
+
+                <!-- Mekan sayfası -->
+                <section class="view push" data-view="mekan" data-title="" hidden>
+                    <header class="navbar">
+                        <div class="nav-edge"></div>
+                        <div class="nav-row">
+                            <span class="nav-side"><button class="gbtn glass press" data-action="back" aria-label="Geri"><svg><use href="#i-chevron-left"/></svg></button></span>
+                            <span class="nav-title" data-place-title></span>
+                            <span class="nav-side right">
+                                <button class="gbtn glass press" aria-label="Paylaş" data-action="toast" data-toast="Bağlantı kopyalandı"><svg><use href="#i-share"/></svg></button>
+                                <button class="gbtn glass press" aria-label="Gidilecekler'e ekle" data-action="bookmark"><svg><use href="#i-bookmark"/></svg></button>
+                            </span>
+                        </div>
+                    </header>
+                    <div class="scroller">
+                        <div class="place-head">
+                            <p class="place-kind" data-place-kind></p>
+                            <h1 class="place-name" data-place-name></h1>
+                            <p class="place-meta"><svg><use href="#i-badge-check"/></svg> Alkol servisi mekanın kendi sitesine göre doğrulandı</p>
+                        </div>
+                        <div class="actions">
+                            <button class="action prominent press" data-action="rate"><svg><use href="#i-star"/></svg>Puanla</button>
+                            <button class="action press"><svg><use href="#i-navigation"/></svg>Yol tarifi</button>
+                            <button class="action press"><svg><use href="#i-phone"/></svg>Ara</button>
+                            <button class="action press"><svg><use href="#i-globe"/></svg>Web</button>
+                        </div>
+                        <article class="score-card">
+                            <span class="ring" style="--s:104px;--w:9" data-ring data-place-ring><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b data-ring-num></b></span>
+                            <div class="score-body">
+                                <span class="tier" data-place-tier></span>
+                                <h2>Ekibinin ortalaması</h2>
+                                <p>5 kişi · 3 ziyaret · son ziyaret 3 Ekim</p>
+                            </div>
+                        </article>
+                        <div class="sec-head"><h2>Kriterler</h2></div>
+                        <div class="group" data-list="criteria"></div>
+                        <div class="sec-head"><h2>Bilgiler</h2></div>
+                        <div class="group">
+                            <div class="row static"><span class="row-body"><span class="row-sub">Adres</span><span class="row-title wrap" data-place-address></span></span></div>
+                            <div class="row static"><span class="row-body"><span class="row-sub">Telefon</span><span class="row-title tint-text">0216 000 00 00</span></span></div>
+                            <button class="row press"><span class="row-body"><span class="row-title tint-text">Google Maps'te aç</span></span><svg class="chev"><use href="#i-chevron-right"/></svg></button>
+                        </div>
+                        <p class="fineprint">Mekan bilgileri Overture Maps açık verisinden. Puanlar ekip üyelerinin kişisel görüşleridir.</p>
+                    </div>
+                </section>
+
+                <!-- Tasarım tokenları (telefondan bakanlar için) -->
+                <section class="view push" data-view="tokenlar" data-title="Tasarım tokenları" hidden>
+                    <header class="navbar">
+                        <div class="nav-edge"></div>
+                        <div class="nav-row"><span class="nav-side"><button class="gbtn glass press" data-action="back" aria-label="Geri"><svg><use href="#i-chevron-left"/></svg></button></span><span class="nav-title">Tasarım tokenları</span><span class="nav-side right"></span></div>
+                    </header>
+                    <div class="scroller">
+                        <div class="large-head"><h1 class="large-title">Tokenlar</h1></div>
+                        <div class="sec-head"><h2>Renkler</h2></div>
+                        <div class="swatches in-app" data-swatches></div>
+                        <div class="sec-head"><h2>Hareket</h2></div>
+                        <div class="group pad" data-motion></div>
+                    </div>
+                </section>
+            </div>
+
+            <nav class="tabbar glass" id="tabbar" aria-label="Sekmeler">
+                <span class="tab-lens"></span>
+                <button class="tab" data-tab="akis" aria-selected="true"><svg><use href="#i-house"/></svg><span>Akış</span></button>
+                <button class="tab" data-tab="kesfet" aria-selected="false"><svg><use href="#i-compass"/></svg><span>Keşfet</span></button>
+                <button class="tab" data-tab="siralama" aria-selected="false"><svg><use href="#i-trophy"/></svg><span>Sıralama</span></button>
+                <button class="tab" data-tab="ekip" aria-selected="false"><svg><use href="#i-users"/></svg><span>Ekip</span></button>
+            </nav>
+            <button class="fab glass press" data-action="rate" aria-label="Puanla"><svg><use href="#i-plus"/></svg></button>
+
+            <div class="dim" id="dim" data-action="close-sheet"></div>
+            <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-hidden="true">
+                <div class="grabber" aria-hidden="true"></div>
+                <header class="sheet-head">
+                    <button class="gbtn glass press" data-action="close-sheet" aria-label="Kapat"><svg><use href="#i-x"/></svg></button>
+                    <h2 id="sheet-title">Puanla</h2>
+                    <button class="gbtn tinted press" data-action="save" aria-label="Kaydet"><svg><use href="#i-check"/></svg></button>
+                </header>
+                <div class="sheet-body">
+                    <div class="live">
+                        <span class="ring" style="--s:120px;--w:8" data-ring data-live-ring><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100"/></svg><b data-ring-num></b></span>
+                        <span class="tier" data-live-tier></span>
+                        <p class="live-name" data-sheet-place></p>
+                    </div>
+                    <div class="group sliders" data-list="sliders"></div>
+                    <p class="fineprint">Puanın yalnızca ekibinle paylaşılır. Puanladığın şey mekan deneyimi: servis, ortam, temizlik ve fiyat/performans.</p>
+                    <button class="btn-prominent press" data-action="save"><span class="lbl">Kaydet</span><svg><use href="#i-check"/></svg></button>
+                </div>
+            </section>
+            <div class="toast glass" id="toast" role="status" aria-live="polite"><svg><use href="#i-circle-check"/></svg><span></span></div>
+        </div>
+    </div>
+</div>
+<script src="./demo.js"></script>
+</body>
+</html>

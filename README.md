@@ -17,7 +17,10 @@ Arkadaşlarınla gittiğin pub, bar, kokteyl bar, meyhane ve restoranları birli
 - **Kişisel istatistikler ve rozetler:** Kim cömert, kim sert puanlıyor, kim kiminle aynı zevkte (uyum matrisi), puanlama tarzı.
 - **Paylaşım:** Hikâye boyutunda skor görseli, WhatsApp metni, PDF rapor, gizlilik ayarlı herkese açık bağlantı.
 - **PWA:** Ana ekrana eklenebilir. Çevrimdışı açılır; kayıtlar bağlantı gelince gönderilir.
-- **Yasal hazırlık:** 18 yaş onayı, KVKK aydınlatma metni, kullanım koşulları, varsayılan olarak kapalı ve alkol kategorisini engelleyen reklam altyapısı. Ayrıntılar: [`docs/YASAL.md`](docs/YASAL.md).
+- **Yasal hazırlık:** 18 yaş onayı, KVKK aydınlatma metni, kullanım koşulları, "alkol tanıtımı yapılmaz" beyanı, varsayılan olarak kapalı ve alkol kategorisini engelleyen reklam altyapısı. Ayrıntılar: [`docs/YASAL.md`](docs/YASAL.md).
+- **İletişim ve başvuru formu (`/iletisim`):** Sitede e-posta adresi yok. KVKK başvurusu (Tebliğ m.5 bilgileriyle), hukuka aykırı içerik bildirimi, mekan bilgisi ve diğer talepler Netlify Forms'a gider; Netlify'da form algılama açılmalı (bkz. `docs/YASAL.md` → Yayından önce yapılacaklar). Yerelde gönderimler `.data/forms.jsonl` dosyasına yazılır.
+- **Tanıtım sayfası (`/tanitim/`):** Uygulamadan bağımsız statik sayfa (`public/tanitim/`).
+- **Tasarım önizlemesi:** `design/demo.html` (yalnızca yerelde, `npm run dev` → `/design/demo.html`); Apple (iOS 26) dilinde tokenlar `design/tokens.css`. Yayına girmez.
 
 ## Mimari
 
