@@ -12,7 +12,7 @@ import { openSheet, toast, toastError } from '../state/ui';
 import { venueSummaries } from '../state/data';
 import { memberships } from '../state/session';
 import { BookmarkPlus, ChevronRight, Flag, Link as LinkIcon, MapPin, Navigation, Plus, Smartphone } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Empty, Loading, TierChip, TopBar } from '../components/ui';
 import { PlaceStats } from './explore';
 import { addToWishlist } from './ranking';
@@ -90,7 +90,7 @@ export function PlacePage() {
 
                 {crewVenue && (
                     <a class="banner mt-16" href={`/mekan/${crewVenue.venue.id}`}>
-                        <span class="b-icon"><Pint score={crewVenue.avg ?? 0} size={18} /></span>
+                        <span class="b-icon"><ScoreRing score={crewVenue.avg ?? null} size={22} /></span>
                         <div class="grow" style={{ minWidth: 0 }}>
                             <b>Ekibin {crewVenue.count ? `${crewVenue.count} kez gitti` : 'listesinde'}</b>
                             <div class="small muted">{crewVenue.count ? `Ortalama ${fmtScore(crewVenue.avg)}${crewVenue.last ? ` · son ${fmtRelativeDay(crewVenue.last)}` : ''}` : 'Gidilecekler listesinde'}</div>

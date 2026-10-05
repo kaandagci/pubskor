@@ -1,11 +1,11 @@
-import '@fontsource-variable/geist';
-import '@fontsource-variable/fraunces/soft.css';
 import './styles/index.css';
 import './lib/nav';
+import { installErrorReporting } from './lib/errors';
 import { render } from 'preact';
 import { App } from './app';
 import { applyTheme, themePref, toast } from './state/ui';
 
+installErrorReporting();
 applyTheme(themePref.value);
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => applyTheme(themePref.value));
 

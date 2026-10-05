@@ -9,7 +9,7 @@ import { fmtDate, fmtScore } from '../lib/format';
 import { Avatar } from '../components/Avatar';
 import { MetricBars } from '../components/charts';
 import { KIND_ICONS, MapPin } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { AppMark, ScoreRing } from '../components/ScoreRing';
 import { Empty, Loading, TierChip } from '../components/ui';
 import { PhotoImg } from '../components/visit';
 
@@ -29,7 +29,7 @@ export function SharedPage() {
     return (
         <main class="page no-tabbar">
             <div class="row between mt-8">
-                <span class="brand-word"><span class="brand-mark"><Pint score={8} size={14} /></span>Pub Skor</span>
+                <span class="brand-word"><AppMark size={30} />Pub Skor</span>
                 <span class="badge">{data.crewName}</span>
             </div>
             {v.photos[0] && <div class="card mt-16" style={{ overflow: 'hidden', aspectRatio: '16 / 10' }}><PhotoImg photo={v.photos[0]} eager /></div>}
@@ -37,7 +37,7 @@ export function SharedPage() {
             <h1 class="display mt-8" style={{ fontSize: '34px', lineHeight: 1.05 }}>{venue.name}</h1>
             <div class="vhero-meta"><MapPin size={14} />{[venueKindLabel(venue.kind), venue.area, fmtDate(v.date, { year: true })].filter(Boolean).join(' · ')}</div>
             <div class="card detail-score">
-                <Pint score={v.score} size={52} pour />
+                <ScoreRing score={v.score} size={64} stroke={8} showValue={false} animate />
                 <div class="grow">
                     <div class="score-big"><span class="value">{fmtScore(v.score)}<small>/10</small></span></div>
                     <div class="row mt-8" style={{ gap: '8px' }}><TierChip score={v.score} /><span class="small faint">{v.participants.length} kişinin ortak kararı</span></div>

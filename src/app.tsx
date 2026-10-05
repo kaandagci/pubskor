@@ -8,6 +8,7 @@ import { linkCrewPlaces } from './state/link-places';
 import { activeCrewId, memberships } from './state/session';
 import { loadMe, loggedIn, profileStatus } from './state/user';
 import { toast } from './state/ui';
+import { reportError } from './lib/errors';
 import { authUser, handleCallback } from './lib/auth';
 import { SheetHost, TabBar, ToastHost } from './components/ui';
 import { CreateCrew, JoinCrew, LinkDevice, PasteInvite } from './features/onboarding';
@@ -92,7 +93,7 @@ function Shell() {
         <div class="app">
             <AuthBoot />
             <Guard />
-            <ErrorBoundary onError={e => console.error(e)}>
+            <ErrorBoundary onError={e => { console.error(e); reportError('render', e); }}>
                 <Router onRouteChange={() => window.scrollTo(0, 0)}>
                     <Route path="/" component={Home} />
                     <Route path="/hosgeldin" component={Welcome} />

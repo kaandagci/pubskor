@@ -14,7 +14,7 @@ import { ApiError, request } from '../lib/api';
 import { authUser } from '../lib/auth';
 import { summaryById, venueSummaries } from '../state/data';
 import { online, toast } from '../state/ui';
-import { Beer, LocateFixed, MapPin, Plus, Search, X } from '../components/icons';
+import { LocateFixed, MapPin, Plus, Search, VenueIcon, X } from '../components/icons';
 import { AsyncButton, Spinner, Switch } from '../components/ui';
 
 export interface VenueChoice { venueId: string | null; venue: VenueInput }
@@ -170,7 +170,7 @@ export function VenuePicker({ onPick }: { onPick: (c: VenueChoice) => void }) {
                     <div class="eyebrow mb-8">{q ? 'Ekibin mekanları' : 'Son gidilenler'}</div>
                     {mine.map(s => (
                         <button class="place" key={s.venue.id} onClick={() => onPick({ venueId: s.venue.id, venue: { id: s.venue.id, name: s.venue.name, kind: s.venue.kind, area: s.venue.area } })}>
-                            <span class="p-icon mine"><Beer /></span>
+                            <span class="p-icon mine"><VenueIcon /></span>
                             <span class="grow" style={{ minWidth: 0 }}>
                                 <span class="truncate" style={{ display: 'block', fontWeight: 600 }}>{s.venue.name}</span>
                                 <span class="small faint truncate" style={{ display: 'block' }}>

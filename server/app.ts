@@ -4,6 +4,7 @@ import { HttpError, fail } from './http';
 import type { Identity } from './identity';
 import type { KV, LegacyStores } from './kv';
 import * as crew from './routes-crew';
+import * as errors from './routes-errors';
 import * as me from './routes-me';
 import * as popular from './routes-popular';
 import type { CatalogPlace } from '../shared/places';
@@ -56,6 +57,9 @@ const ROUTES: [string, string, Handler][] = [
     // Popüler mekanlar ve "Buradayım"
     ['GET', '/api/popular', popular.getPopular],
     ['POST', '/api/checkin', popular.checkin],
+
+    // İstemci hata raporu (kimliksiz)
+    ['POST', '/api/client-error', errors.clientError],
 
     // Herkese açık okumalar
     ['GET', '/api/shares/:sid', visits.getShare],

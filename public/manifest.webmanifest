@@ -1,15 +1,15 @@
 {
   "name": "Pub Skor",
   "short_name": "Pub Skor",
-  "description": "Arkadaşlarınla gittiğin mekanları birlikte puanla.",
+  "description": "Mekan puanlama uygulaması: arkadaşlarınla gittiğin mekanları birlikte puanla.",
   "lang": "tr",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f0c0a",
-  "theme_color": "#0f0c0a",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
   "categories": ["food", "lifestyle", "social"],
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },

@@ -12,7 +12,7 @@ import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { MetricBars, TrendChart } from '../components/charts';
 import { BookmarkPlus, Ellipsis, Info, KIND_ICONS, LocateFixed, MapPin, Navigation, Pencil, Plus, Split, ThumbsUp } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Empty, Field, Stat, TierChip, TopBar } from '../components/ui';
 import { Cover, VisitRow } from '../components/visit';
 import { addToWishlist } from './ranking';
@@ -198,7 +198,7 @@ export function VenuePage() {
                                         <div class="list-item" key={i}>
                                             <Avatar p={f.p} size="sm" />
                                             <span class="li-body"><span class="li-title">{f.p.name}</span><span class="li-sub">{f.n} ziyaret</span></span>
-                                            <Pint score={f.avg} size={16} />
+                                            <ScoreRing score={f.avg} size={18} />
                                             <b class="num">{fmtScore(f.avg)}</b>
                                         </div>
                                     ))}

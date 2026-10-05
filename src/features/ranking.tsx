@@ -9,7 +9,7 @@ import { membersById, venueSummaries, wishlist } from '../state/data';
 import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Bookmark, BookmarkPlus, Compass, Plus, Trash2, Trophy } from '../components/icons';
 import { Spark } from '../components/charts';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { Empty, TopBar } from '../components/ui';
 import { VenuePicker, type VenueChoice } from './venue-picker';
 
@@ -46,7 +46,7 @@ export function Ranking() {
                 </div>
 
                 {tab === 'wish' ? <Wishlist /> : !ranked.length && !tags.length ? (
-                    <Empty art={<Pint score={3} size={80} />} title="Sıralama henüz boş" action={<a class="btn btn-primary" href="/yeni"><Plus />Ziyaret ekle</a>}>
+                    <Empty art={<ScoreRing score={null} size={84} stroke={10} showValue={false} />} title="Sıralama henüz boş" action={<a class="btn btn-primary" href="/yeni"><Plus />Ziyaret ekle</a>}>
                         Puanladığınız mekanlar burada kategorilere göre sıralanır.
                     </Empty>
                 ) : (
@@ -76,7 +76,7 @@ export function Ranking() {
                                     <div class="podium mt-16">
                                         {[top[1], top[0], top[2]].map((r, i) => (
                                             <a key={r.s.venue.id} href={`/mekan/${r.s.venue.id}`} class={`podium-item ${['second', 'first', 'third'][i]}`}>
-                                                <Pint score={r.value} size={i === 1 ? 46 : 36} />
+                                                <ScoreRing score={r.value} size={i === 1 ? 56 : 44} showValue={false} animate />
                                                 <div class="p-val">{fmtScore(r.value)}</div>
                                                 <div class="p-name">{r.s.venue.name}</div>
                                                 <div class="podium-step">{[2, 1, 3][i]}</div>

@@ -18,5 +18,6 @@ export const personClass = (color: number) => `pc-${((color % PERSON_COLORS) + P
 export const PERSON_HEX_LIGHT = ['#eda100', '#e87ba4', '#008300', '#2a78d6', '#1baf7a', '#eb6834', '#4a3aa7', '#e34948'];
 export const PERSON_HEX_DARK = ['#c98500', '#d55181', '#008300', '#3987e5', '#199e70', '#d95926', '#9085e9', '#e66767'];
 
-export const TIER_HEX_LIGHT: Record<string, string> = { legend: '#059669', great: '#65a30d', ok: '#d97706', weak: '#ea580c', skip: '#dc2626', none: '#a39584' };
-export const TIER_HEX_DARK: Record<string, string> = { legend: '#34d399', great: '#a3e635', ok: '#fbbf24', weak: '#fb923c', skip: '#f87171', none: '#6f6357' };
+/** Kademe renkleri (Apple sistem renkleri; tokens.css'teki --tier-* ile aynı). Açık zeminde kontrast için koyu tonlar. */
+export const TIER_HEX_LIGHT: Record<string, string> = { legend: '#248a3d', great: '#0c817b', ok: '#a05a00', weak: '#c93400', skip: '#d70015', none: '#8e8e93' };
+export const TIER_HEX_DARK: Record<string, string> = { legend: '#30d158', great: '#63e6e2', ok: '#ffd60a', weak: '#ff9f0a', skip: '#ff453a', none: '#8e8e93' };

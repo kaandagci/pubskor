@@ -10,7 +10,7 @@ import { legacyMemberships } from '../state/session';
 import { completeProfile, identityHint, loadMe, logout, profileStatus } from '../state/user';
 import { toast } from '../state/ui';
 import { ArrowLeft, Compass, LogOut, Users } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { AppMark, ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Field, TopBar } from '../components/ui';
 
 // ----- Girişten sonra dönülecek adres (ör. davet bağlantısı) -----
@@ -72,8 +72,8 @@ export function Welcome() {
     const legacy = legacyMemberships().length > 0;
     return (
         <div class="welcome">
-            <div class="brand-word"><span class="brand-mark"><Pint score={8} size={14} /></span>Pub Skor</div>
-            <div class="welcome-art"><Pint score={8.4} size={150} pour bubbles /></div>
+            <div class="brand-word"><AppMark size={32} />Pub Skor</div>
+            <div class="welcome-art"><ScoreRing score={8.4} size={176} stroke={16} animate /></div>
             <h1>Masadaki herkesin puanı, <em>tek skor.</em></h1>
             <p>Mekan puanlama uygulaması: arkadaşlarınla gittiğiniz pub, bar, meyhane ve restoranların servisini, ortamını ve temizliğini birlikte puanlayın.</p>
             {legacy && (

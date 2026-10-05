@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { useLocation, useRoute } from 'preact-iso';
-import { Beer, Compass, Crown, Gavel, GlassWater, Heart, Map as MapIcon, Martini, Medal, NotebookPen, Radio, Sparkles, UtensilsCrossed, Wine, CupSoda } from 'lucide-preact';
+import { Compass, Crown, Gavel, Heart, Map as MapIcon, Medal, Radio, Sparkles, UtensilsCrossed, CupSoda } from 'lucide-preact';
 import { METRIC_BY_ID } from '../../shared/metrics';
 import { badgesFor, areasOf, type Badge } from '../../shared/badges';
 import { analysisOf, pairs, personKey } from '../../shared/insights';
@@ -12,7 +12,7 @@ import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { AgreementMatrix, BiasBars } from '../components/charts';
 import { ChevronRight, Copy, RefreshCw, Settings, Share2, UserPlus } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { Empty, Stat, TopBar } from '../components/ui';
 import { QR } from '../components/QR';
 import { VisitRow } from '../components/visit';
@@ -82,13 +82,13 @@ export function CrewPage() {
                 </div>
 
                 {h.totals.visits === 0 ? (
-                    <Empty art={<Pint score={2} size={70} />} title="İstatistikler ilk ziyaretle başlar">Birkaç ziyaretten sonra kimin cömert, kimin sert olduğunu, kimlerin aynı zevke sahip olduğunu burada göreceksiniz.</Empty>
+                    <Empty art={<ScoreRing score={null} size={84} stroke={10} showValue={false} />} title="İstatistikler ilk ziyaretle başlar">Birkaç ziyaretten sonra kimin cömert, kimin sert olduğunu, kimlerin aynı zevke sahip olduğunu burada göreceksiniz.</Empty>
                 ) : (
                     <>
                         <section class="section">
                             <div class="section-head"><h2>Öne çıkanlar</h2></div>
                             <div class="hl-grid">
-                                {h.top && hl('Ekibin favorisi', <><Pint score={h.top.avg} size={16} /><span>{h.top.venue.name}</span></>, `${fmtScore(h.top.avg)} ortalama`, `/mekan/${h.top.venue.id}`)}
+                                {h.top && hl('Ekibin favorisi', <><ScoreRing score={h.top.avg} size={18} /><span>{h.top.venue.name}</span></>, `${fmtScore(h.top.avg)} ortalama`, `/mekan/${h.top.venue.id}`)}
                                 {h.mostVisited && hl('En çok gidilen', <span>{h.mostVisited.venue.name}</span>, `${h.mostVisited.count} ziyaret`, `/mekan/${h.mostVisited.venue.id}`)}
                                 {h.generous && hl('En cömert', <><Avatar p={h.generous} size="sm" /><span>{h.generous.name}</span></>, `Masadan ${fmtSigned(h.generous.bias)} puan yüksek`, `/kisi/${h.generous.key}`)}
                                 {h.harsh && hl('En sert', <><Avatar p={h.harsh} size="sm" /><span>{h.harsh.name}</span></>, `Masadan ${fmtSigned(h.harsh.bias)} puan düşük`, `/kisi/${h.harsh.key}`)}
@@ -127,9 +127,9 @@ export function CrewPage() {
     );
 }
 
-const BADGE_ICONS: Record<string, typeof Beer> = {
-    sparkles: Sparkles, medal: Medal, crown: Crown, map: MapIcon, compass: Compass, heart: Heart, radio: Radio, notebook: NotebookPen,
-    beer: Beer, martini: Martini, wine: Wine, glass: GlassWater, utensils: UtensilsCrossed, soda: CupSoda, gavel: Gavel
+const BADGE_ICONS: Record<string, typeof Medal> = {
+    sparkles: Sparkles, medal: Medal, crown: Crown, map: MapIcon, compass: Compass, heart: Heart, radio: Radio,
+    utensils: UtensilsCrossed, soda: CupSoda, gavel: Gavel
 };
 
 function BadgeGrid({ list }: { list: Badge[] }) {
@@ -138,12 +138,12 @@ function BadgeGrid({ list }: { list: Badge[] }) {
             {list.map(b => {
                 const I = BADGE_ICONS[b.icon] ?? Medal;
                 return (
-                    <div class="hl" key={b.id} style={b.earned ? { borderColor: 'var(--accent-line)', background: 'linear-gradient(150deg, var(--accent-soft), var(--surface-1) 70%)' } : { opacity: 0.72 }}>
-                        <span class="hl-main"><I size={18} style={{ color: b.earned ? 'var(--accent)' : 'var(--text-3)', flexShrink: 0 }} /><span>{b.label}</span></span>
+                    <div class="hl" key={b.id} style={b.earned ? { background: 'linear-gradient(150deg, var(--tint-soft), var(--bg-elevated) 70%)' } : { opacity: 0.72 }}>
+                        <span class="hl-main"><I size={18} style={{ color: b.earned ? 'var(--tint-text)' : 'var(--label-2)', flexShrink: 0 }} /><span>{b.label}</span></span>
                         <span class="hl-sub">{b.desc}</span>
                         {!b.earned && (
-                            <div style={{ height: '4px', borderRadius: '4px', background: 'var(--surface-3)', overflow: 'hidden' }} role="progressbar" aria-valuenow={b.progress} aria-valuemax={b.goal}>
-                                <div style={{ width: `${(b.progress / b.goal) * 100}%`, height: '100%', background: 'var(--accent)' }} />
+                            <div style={{ height: '4px', borderRadius: '4px', background: 'var(--fill)', overflow: 'hidden' }} role="progressbar" aria-valuenow={b.progress} aria-valuemax={b.goal}>
+                                <div style={{ width: `${(b.progress / b.goal) * 100}%`, height: '100%', background: 'var(--tint)' }} />
                             </div>
                         )}
                         {!b.earned && <span class="tiny faint">{b.progress} / {b.goal}</span>}

@@ -3,8 +3,14 @@
 import type { ComponentChildren } from 'preact';
 import { LEGAL } from '../config';
 import { setConsent } from '../state/consent';
-import { Pint } from '../components/Pint';
+import { AppMark } from '../components/ScoreRing';
 import { TopBar } from '../components/ui';
+
+/** Veri sorumlusu: kimlik girildiyse ad / unvan ve adres, girilmediyse kişisel bilgi olmadan tanım. */
+function Controller() {
+    if (LEGAL.controller) return <><b>{LEGAL.controller}</b>{LEGAL.address ? `, ${LEGAL.address}` : ''}</>;
+    return <>Pub Skor'u geliştiren ve işleten kişi (“Pub Skor”)</>;
+}
 
 /** Tek iletişim kanalı: başvuru formu. */
 const ContactLink = ({ children = 'İletişim ve başvuru formu' }: { children?: ComponentChildren }) => <a class="link-btn" href={LEGAL.contact}>{children}</a>;
@@ -26,7 +32,8 @@ export function Privacy() {
     return (
         <Doc title="Gizlilik ve KVKK aydınlatma metni">
             <h2>1. Veri sorumlusu</h2>
-            <p>6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamında veri sorumlusu: <b>{LEGAL.controller}</b>, {LEGAL.address}. Başvuru ve şikayetler için: <ContactLink />{LEGAL.kep ? `, KEP: ${LEGAL.kep}` : ''}.</p>
+            <p>6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamında veri sorumlusu: <Controller />. Tüm başvuru ve şikayetler için tek kanal: <ContactLink />{LEGAL.kep ? `, KEP: ${LEGAL.kep}` : ''}.</p>
+            {!LEGAL.controller && <p>Veri sorumlusunun kimlik ve tebligat bilgileri, KVKK başvurusu yapan ilgili kişiye başvurunun yanıtında ve yetkili makamlara talep hâlinde bildirilir.</p>}
 
             <h2>2. İşlenen veriler</h2>
             <ul>
@@ -36,7 +43,7 @@ export function Privacy() {
                 <li><b>Konum:</b> Yalnızca “yakınımdaki mekanlar”, “buradayım” ya da harita özelliklerini kullandığında cihazının konumu. Yakındaki mekanlar cihazında hesaplanır; adla aramada konumun yaklaşık 1 km'ye yuvarlanarak sunucuya gider ve saklanmaz. Kaydedilen tek konum, seçtiğin ya da eklediğin mekanın konumudur; senin konum geçmişin tutulmaz.</li>
                 <li><b>Topluluk mekanı:</b> Listede olmayan bir mekanı “herkes bulabilsin” seçeneğiyle eklersen mekanın adı, türü ve konumu Pub Skor'un İstanbul mekan listesine eklenir. Kimin eklediği diğer kullanıcılara gösterilmez.</li>
                 <li><b>Cihaz verisi:</b> Oturum bilgisi, tema ve gizlilik tercihlerin, çevrimdışı taslaklar ve ekip kopyaları (yalnızca cihazında).</li>
-                <li><b>Teknik kayıtlar:</b> Barındırma sağlayıcısının güvenlik ve kötüye kullanım önleme amacıyla tuttuğu IP adresi ve istek kayıtları.</li>
+                <li><b>Teknik kayıtlar:</b> Barındırma sağlayıcısının güvenlik ve kötüye kullanım önleme amacıyla tuttuğu IP adresi ve istek kayıtları. Uygulamada bir hata oluşursa hatayı düzeltmek için hata mesajı, sayfa yolu, uygulama sürümü ve tarayıcı türü (ad, e-posta, ekip ya da konum bilgisi olmadan) sunucu günlüğüne yazılır.</li>
                 <li><b>İletişim formu:</b> Formu kullanırsan aşağıda “İletişim formu” başlığında anlatılan bilgiler.</li>
             </ul>
 
@@ -57,7 +64,6 @@ export function Privacy() {
                 <li>Hesap, ekip, ziyaret ve canlı masa hizmetinin sunulması: sözleşmenin kurulması ve ifası (KVKK m.5/2-c).</li>
                 <li>Anonim popülerlik istatistiği ve topluluk mekan listesi: hizmetin geliştirilmesine yönelik meşru menfaat (m.5/2-f); kişiyi belirlemeye imkân vermeyecek şekilde ve kapatılabilir olarak.</li>
                 <li>Güvenlik, kötüye kullanımın önlenmesi, hizmetin iyileştirilmesi: meşru menfaat (m.5/2-f) ve hukuki yükümlülük (m.5/2-ç).</li>
-                <li>Kişiselleştirilmiş reklam ve kullanım istatistiği (şu an kullanılmıyor; eklenirse): yalnızca açık rıza (m.5/1). Rızanı Ayarlar → Gizlilik tercihleri’nden istediğin an geri alabilirsin.</li>
             </ul>
 
             <h2>4. Kimlere aktarılır?</h2>
@@ -80,7 +86,7 @@ export function Privacy() {
             </ul>
 
             <h2>6. Yerel depolama ve çerezler</h2>
-            <p>Pub Skor çerez kullanmaz. Tarayıcının yerel depolamasını yalnızca hizmetin çalışması için zorunlu amaçlarla kullanır (oturum bilgisi, taslaklar, tercihler, çevrimdışı kopya). Bu kullanım için açık rıza gerekmez. Reklam ya da analiz gibi zorunlu olmayan bir araç eklenirse önce açık rızan istenir.</p>
+            <p>Pub Skor çerez kullanmaz. Tarayıcının yerel depolamasını yalnızca hizmetin çalışması için zorunlu amaçlarla kullanır (oturum bilgisi, taslaklar, tercihler, çevrimdışı kopya). Bu kullanım için açık rıza gerekmez.</p>
 
             <h2>7. Hakların (KVKK m.11)</h2>
             <p>Verilerinin işlenip işlenmediğini öğrenme, bilgi talep etme, amacına uygun kullanılıp kullanılmadığını öğrenme, aktarıldığı üçüncü kişileri bilme, eksik ya da yanlış işlenmişse düzeltilmesini, silinmesini ya da yok edilmesini isteme, bu işlemlerin aktarılan kişilere bildirilmesini isteme, otomatik analiz sonucuna itiraz etme ve zararın giderilmesini talep etme haklarına sahipsin.</p>
@@ -122,7 +128,7 @@ export function Terms() {
             <h2>8. Değişiklikler ve uygulanacak hukuk</h2>
             <p>Bu koşullar güncellenebilir; önemli değişiklikler uygulama içinde duyurulur. Uyuşmazlıklarda Türkiye Cumhuriyeti hukuku uygulanır.</p>
             <h2>9. İletişim</h2>
-            <p>{LEGAL.controller} · {LEGAL.address} · <ContactLink /></p>
+            <p>{LEGAL.controller ? <><Controller /> · </> : null}<ContactLink /></p>
         </Doc>
     );
 }
@@ -141,8 +147,6 @@ export function LegalInfo() {
             </ul>
             <h2>Neden paylaşımlarda marka ya da logo yok?</h2>
             <p>Türkiye’de 4250 sayılı Kanun’un 6. maddesi uyarınca alkollü içkilerin her türlü reklamı ve tüketiciye yönelik tanıtımı yasaktır; 20 Haziran 2026’da yürürlüğe giren düzenlemeyle alkollü içki marka, logo ve görsellerinin kullanımı daha da sınırlandırılmıştır. Bu nedenle Pub Skor’un ürettiği paylaşım görselleri, PDF raporları ve herkese açık bağlantılar marka adı, logo ya da sipariş listesi içermez; yalnızca mekan deneyimine dair puanları gösterir.</p>
-            <h2>Reklamlar</h2>
-            <p>Pub Skor’da şu an reklam yoktur. İleride gösterilirse: alkol, tütün ve bahis reklamı kesinlikle yer almaz; her reklam açıkça “Reklam” olarak etiketlenir; kişiselleştirilmiş reklam yalnızca açık rızanla yapılır.</p>
             <h2>18 yaş sınırı</h2>
             <p>Uygulama 18 yaş ve üzeri içindir.</p>
             <h2>Sorumlu tüketim</h2>
@@ -150,7 +154,7 @@ export function LegalInfo() {
             <h2>Veri kaynakları</h2>
             <p>Mekan bilgileri: <a class="link-btn" href="https://overturemaps.org" target="_blank" rel="noopener">Overture Maps Foundation</a> açık verisi (Meta ve Microsoft: CDLA-Permissive-2.0; Foursquare Open Source Places: Apache 2.0; AllThePlaces: CC0). Harita: © OpenStreetMap katkıcıları (ODbL). Mekan bilgileri hatalı ya da eski olabilir.</p>
             <h2>İletişim ve bildirim</h2>
-            <p>İçerik sağlayıcı: {LEGAL.controller}, {LEGAL.address}. Yer sağlayıcı: {LEGAL.hosting}.</p>
+            <p>{LEGAL.controller ? <>İçerik sağlayıcı: <Controller />. </> : <>Pub Skor ücretsiz, reklamsız ve ticari amaç gütmeyen bir hizmettir. </>}Yer sağlayıcı: {LEGAL.hosting}.</p>
             <p>KVKK başvurusu, hukuka aykırı içerik ya da kişilik hakkı ihlali bildirimi ve diğer tüm talepler için tek kanal <ContactLink />. Kişilik hakkı ihlali bildirimleri en geç 24 saat, KVKK başvuruları en geç 30 gün içinde yanıtlanır.</p>
             <p class="mt-16"><a class="link-btn" href="/gizlilik">Gizlilik ve KVKK aydınlatma metni</a> · <a class="link-btn" href="/kosullar">Kullanım koşulları</a> · <ContactLink>İletişim</ContactLink></p>
         </Doc>
@@ -162,7 +166,7 @@ export function AgeGate({ onAccept }: { onAccept: () => void }) {
     return (
         <div class="welcome" style={{ justifyContent: 'center' }}>
             <div class="center">
-                <Pint score={7} size={72} />
+                <AppMark size={76} />
                 <h1 class="mt-24" style={{ fontSize: '34px' }}>18 yaşından büyük müsün?</h1>
                 <p>Pub Skor bir mekan puanlama uygulamasıdır. Alkollü içki sunulan mekanların değerlendirmelerini içerdiği için yalnızca 18 yaş ve üzeri kullanıcılar içindir. Alkollü içki satmaz, tanıtmaz, reklamını yapmaz.</p>
             </div>

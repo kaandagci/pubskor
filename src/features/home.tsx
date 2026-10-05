@@ -12,7 +12,7 @@ import { online, openSheet, confirmSheet } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { Check, ChevronDown, ChevronRight, CloudOff, Compass, History, Link as LinkIcon, Pencil, Plus, Radio, RefreshCw, Search, Settings, TriangleAlert, Upload, Users, X } from '../components/icons';
 import { profile } from '../state/user';
-import { Pint } from '../components/Pint';
+import { AppMark, ScoreRing } from '../components/ScoreRing';
 import { Empty, Spinner, Stat, TopBar } from '../components/ui';
 import { VisitHero, VisitRow } from '../components/visit';
 import { openInvite } from './crew';
@@ -112,7 +112,7 @@ function NoCrewHome() {
     const p = profile.value;
     return (
         <>
-            <TopBar left={<span class="brand-word" style={{ fontSize: '19px' }}><span class="brand-mark"><Pint score={8} size={14} /></span>Pub Skor</span>}
+            <TopBar left={<span class="brand-word"><AppMark size={30} />Pub Skor</span>}
                 actions={<a class="icon-btn" href="/ayarlar" aria-label="Ayarlar"><Settings /></a>} />
             <main class="page">
                 <div class="page-head">
@@ -194,7 +194,7 @@ function CrewHome() {
         <TopBar
             left={
                 <button class="row" style={{ gap: '10px', minWidth: 0, flex: 1, textAlign: 'left' }} onClick={openCrewSwitcher} aria-label="Ekip değiştir">
-                    <span class="brand-mark"><Pint score={8} size={14} /></span>
+                    <AppMark size={32} />
                     <span style={{ minWidth: 0 }}>
                         <span class="tiny faint" style={{ display: 'block', fontWeight: 600, lineHeight: 1.1 }}>Ekip</span>
                         <b class="truncate" style={{ display: 'block', fontSize: '16.5px' }}>{crewName}</b>
@@ -293,8 +293,8 @@ function CrewHome() {
 
                 {list.length === 0 ? (
                     <Empty
-                        art={<Pint score={0} size={86} />}
-                        title="Bardaklar boş"
+                        art={<ScoreRing score={null} size={84} stroke={10} showValue={false} />}
+                        title="Henüz ziyaret yok"
                         action={<div class="stack gap-8" style={{ alignItems: 'center' }}>
                             <a class="btn btn-primary btn-lg" href="/yeni"><Plus />İlk ziyareti ekle</a>
                             {s.members.filter(m => !m.removed).length < 2 && <button class="btn btn-ghost" onClick={openInvite}><Users />Önce arkadaşlarını davet et</button>}

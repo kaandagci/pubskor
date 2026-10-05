@@ -92,7 +92,8 @@ export function applyTheme(pref: ThemePref) {
     const root = document.documentElement;
     if (pref === 'system') delete root.dataset.theme; else root.dataset.theme = pref;
     const dark = pref === 'dark' || (pref === 'system' && !matchMedia('(prefers-color-scheme: light)').matches);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0f0c0a' : '#f6f1e9');
+    // Tarayıcı / PWA durum çubuğu zeminle aynı renkte (tokens.css → --bg)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#f2f2f7');
 }
 
 // ----- Bağlantı -----

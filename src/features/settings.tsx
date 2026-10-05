@@ -13,7 +13,6 @@ import { fmtDate, initials } from '../lib/format';
 import { download } from '../lib/share';
 import { local } from '../lib/storage';
 import { forgetCrewCache, mutate, syncCrew } from '../state/crew';
-import { consent, setConsent } from '../state/consent';
 import { deletedVisits, isOwner, me, snapshot, venueById, venueName } from '../state/data';
 import { enqueue, storePhoto } from '../state/outbox';
 import { activeMembership, crewAuth, memberships, removeMembership } from '../state/session';
@@ -366,18 +365,8 @@ export function Settings() {
                 <LocalLegacy />
 
                 <section class="section">
-                    <div class="section-head"><h2>Gizlilik</h2></div>
+                    <div class="section-head"><h2>Gizlilik ve yasal</h2></div>
                     <div class="list">
-                        <div class="list-item">
-                            <span class="li-icon"><Shield /></span>
-                            <span class="li-body"><span class="li-title">Kişiselleştirilmiş reklam</span><span class="li-sub" style={{ whiteSpace: 'normal' }}>Şu an reklam yok. Eklenirse yalnızca izin verirsen kişiselleştirilir.</span></span>
-                            <Switch checked={consent.value.ads} onChange={v => setConsent({ ads: v })} label="Kişiselleştirilmiş reklam" />
-                        </div>
-                        <div class="list-item">
-                            <span class="li-icon"><Shield /></span>
-                            <span class="li-body"><span class="li-title">Anonim kullanım istatistiği</span><span class="li-sub" style={{ whiteSpace: 'normal' }}>Şu an toplanmıyor.</span></span>
-                            <Switch checked={consent.value.analytics} onChange={v => setConsent({ analytics: v })} label="Anonim kullanım istatistiği" />
-                        </div>
                         <Row icon={<FileText />} title="Gizlilik ve KVKK aydınlatma metni" href="/gizlilik" />
                         <Row icon={<FileText />} title="Kullanım koşulları" href="/kosullar" />
                         <Row icon={<FileText />} title="Yasal bilgiler ve sorumlu tüketim" href="/yasal" />

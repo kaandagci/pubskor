@@ -1,5 +1,5 @@
 // Reklam alanı. ADS.enabled kapalıyken hiçbir şey çizmez ve hiçbir istek atmaz.
-// Tasarımı önizlemek için adres çubuğuna ?reklam=onizleme eklenebilir (yalnızca örnek kart gösterilir).
+// Tasarımı önizlemek için yerel geliştirmede adres çubuğuna ?reklam=onizleme eklenebilir (yayında çalışmaz).
 import { ADS } from '../config';
 import { consent } from '../state/consent';
 import { Megaphone } from './icons';
@@ -24,7 +24,7 @@ const SAMPLE: AdCreative = {
     body: 'Gece çıkışlarında taksi ya da toplu taşımayla güvenle dön.', cta: 'Daha fazla', href: '#', advertiser: 'Örnek reklamveren'
 };
 
-const preview = () => typeof location !== 'undefined' && new URLSearchParams(location.search).get('reklam') === 'onizleme';
+const preview = () => import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('reklam') === 'onizleme';
 
 export function AdSlot({ placement }: { placement: string }) {
     const ad = preview() ? SAMPLE : null;

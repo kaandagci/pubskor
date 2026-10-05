@@ -13,7 +13,7 @@ import { Avatar } from '../components/Avatar';
 import { MetricBars } from '../components/charts';
 import { ItemsList } from '../components/Items';
 import { CloudOff, Ellipsis, KIND_ICONS, MapPin, Pencil, Plus, Radio, Share2, Split, Trash2, TrendingDown, TrendingUp } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { Empty, TierChip, TopBar } from '../components/ui';
 import { Cover, PhotoImg } from '../components/visit';
 import { openShareSheet } from './share-sheet';
@@ -95,7 +95,7 @@ export function VisitDetail() {
                 </div>
 
                 <div class="card detail-score">
-                    <Pint score={v.score} size={52} />
+                    <ScoreRing score={v.score} size={64} stroke={8} showValue={false} animate />
                     <div class="grow">
                         <div class="score-big"><span class="value">{fmtScore(v.score)}<small>/10</small></span></div>
                         <div class="row mt-8" style={{ gap: '8px' }}><TierChip score={v.score} /><span class="small faint">{v.participants.length} kişi · {v.metrics.length} kriter</span></div>

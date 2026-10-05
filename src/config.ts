@@ -1,13 +1,19 @@
-// Uygulama yapılandırması. Yayına almadan önce LEGAL alanlarını doldurmalısın (bkz. docs/YASAL.md).
+// Uygulama yapılandırması. Yasal alanların anlamı ve riskleri için bkz. docs/YASAL.md.
 
 export const APP_VERSION = '8.1.0';
 
-/** Veri sorumlusu ve iletişim bilgileri (KVKK aydınlatma metni ve 5651 kimlik bildirimi için). */
+/** Veri sorumlusu ve iletişim bilgileri (KVKK aydınlatma metni). */
 export const LEGAL = {
-    /** Gerçek kişi adı soyadı ya da şirket unvanı. */
-    controller: '[Veri sorumlusunun adı / unvanı]',
-    /** Tebligata elverişli adres. */
-    address: '[Adres]',
+    /**
+     * Veri sorumlusunun adı ya da şirket unvanı. Boşsa metinlerde kişisel ad ve adres gösterilmez; veri sorumlusu
+     * "Pub Skor'u geliştiren ve işleten kişi" olarak anılır, kimlik bilgisi yalnızca başvuru yanıtında ve yetkili
+     * makamlara bildirilir. DİKKAT: KVKK m.10 ve Aydınlatma Tebliği m.5 aydınlatmada veri sorumlusunun kimliğini
+     * ister; boş bırakmak bu yükümlülüğü tam karşılamaz. Kişisel ad vermeden uyumlu olmanın yolu bir şirket
+     * kurup buraya şirket unvanını yazmaktır (bkz. docs/YASAL.md).
+     */
+    controller: '',
+    /** Tebligat adresi (şirket varsa şirket adresi). Boşsa gösterilmez. */
+    address: '',
     /**
      * Başvuru ve şikayet kanalı: uygulama içi form (KVKK Başvuru Tebliği m.5: "başvuru amacına yönelik geliştirilmiş
      * bir yazılım ya da uygulama"). Sitede e-posta adresi yayımlanmaz; kayıtlar Netlify Forms panelinde görülür.
@@ -20,7 +26,7 @@ export const LEGAL = {
     /** Sunucu ve veritabanı sağlayıcısı (yurt dışı aktarım bilgisi için). */
     hosting: 'Netlify, Inc. (ABD)',
     /** Metinlerin son güncellenme tarihi. */
-    updatedAt: '2026-10-05'
+    updatedAt: '2026-10-06'
 };
 
 /**
@@ -29,6 +35,10 @@ export const LEGAL = {
  * kişiselleştirilmiş reklam yalnızca kullanıcının açık rızasıyla yapılır.
  */
 export const ADS = {
+    /**
+     * Reklam açılırsa hizmet ticari olur: 5651 s. Kanun ve Yönetmelik m.5 uyarınca ticari içerik sağlayıcı kimlik,
+     * adres ve iletişim bilgilerini yayımlamak zorundadır. Bu yüzden LEGAL.controller boşken reklam açılamaz (testle denetlenir).
+     */
     enabled: false,
     blockedCategories: ['alkol', 'tutun', 'elektronik-sigara', 'kumar', 'bahis'] as readonly string[],
     /** Akış ve sıralama listelerinde kaç öğede bir reklam alanı. */

@@ -13,7 +13,7 @@ import { loadPopular, placeStats, popular, type PopularItem, type Window } from 
 import { memberships } from '../state/session';
 import { openSheet, toastError } from '../state/ui';
 import { ChevronDown, ChevronRight, ListOrdered, LocateFixed, Map as MapIcon, Sparkles, TrendingDown, TrendingUp } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Segmented, Spinner, TopBar } from '../components/ui';
 
 const ExploreMap = lazy(() => import('./explore-map'));
@@ -63,7 +63,7 @@ function PopularRow({ p, rank, dist }: { p: PopularItem; rank: number; dist: num
                 <b class="num">{p.groups}</b><span class="tiny faint">grup</span>
                 <Trend n={p.trend} />
             </span>
-            {p.score != null && <span class="pop-score"><Pint score={p.score} size={14} /><span class="num">{fmtScore(p.score)}</span></span>}
+            {p.score != null && <span class="pop-score"><ScoreRing score={p.score} size={16} stroke={3} /><span class="num">{fmtScore(p.score)}</span></span>}
         </a>
     );
 }

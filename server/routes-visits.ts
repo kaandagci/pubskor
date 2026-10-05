@@ -3,7 +3,7 @@ import { ID_RE, newId } from '../shared/ids';
 import { fromLegacy, legacyPhotoId } from '../shared/legacy';
 import { analyze } from '../shared/scoring';
 import { foldKey } from '../shared/text';
-import { isVenueKind } from '../shared/metrics';
+import { isPublicKind, isPublicMetric, isVenueKind } from '../shared/metrics';
 import { isPlaceId } from '../shared/places';
 import { cleanLine } from '../shared/text';
 import type { Participant, SharedVisit, Venue, VenueInput, Visit } from '../shared/types';
@@ -291,15 +291,22 @@ export async function getShare(ctx: Ctx, _req: Request, p: Record<string, string
     const venue = visit && entry!.data.venues.find(x => x.id === visit.venueId);
     if (!visit || !venue) throw new HttpError(404, 'Bu paylaşım kaldırılmış');
     const opts: ShareOpts = s!.data.opts ?? { names: false, photos: false, notes: false };
+    // Herkese açık: içki kriterleri, içki türleri ve harcama çıkarılır (yalnızca mekan deneyimi; 4250 s. K. m.6)
+    const sheets = Object.fromEntries(Object.entries(visit.sheets).map(([pid, sheet]) =>
+        [pid, Object.fromEntries(Object.entries(sheet).filter(([id]) => isPublicMetric(id)))]));
     const out: SharedVisit = {
         crewName: entry!.data.name,
         venue: { ...venue, wish: null, createdBy: null },
         visit: {
             ...visit,
             participants: visit.participants.map((x, i) => ({ ...x, memberId: null, name: opts.names ? x.name : `Kişi ${i + 1}` })),
+            sheets,
+            metrics: visit.metrics.filter(isPublicMetric),
+            kinds: visit.kinds.filter(isPublicKind),
             photos: opts.photos ? visit.photos : [],
             notes: opts.notes ? visit.notes : '',
             items: [],
+            spend: null,
             createdBy: null, updatedBy: null
         }
     };

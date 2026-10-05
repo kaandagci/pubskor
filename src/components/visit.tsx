@@ -5,7 +5,7 @@ import { pendingIds, venueById } from '../state/data';
 import { hydratePhoto, photoUrl } from '../state/outbox';
 import { AvatarStack } from './Avatar';
 import { CloudOff, MapPin } from './icons';
-import { Pint } from './Pint';
+import { ScoreRing } from './ScoreRing';
 import { TierChip } from './ui';
 
 /** Fotoğraf adresi; gönderilmemiş fotoğraflar için cihazdaki kopyayı yükler. */
@@ -64,7 +64,7 @@ export function VisitHero({ v }: { v: Visit }) {
         <a class="vhero" href={`/ziyaret/${v.id}`}>
             <div class="vhero-media">
                 <Cover visit={v} name={name} eager />
-                <div class="vhero-pill score-pill"><Pint score={v.score} size={18} /><b>{fmtScore(v.score)}</b></div>
+                <div class="vhero-pill score-pill"><ScoreRing score={v.score} size={24} stroke={3.5} /><b>{fmtScore(v.score)}</b></div>
             </div>
             <div class="vhero-body">
                 <h3 class="display">{name}</h3>

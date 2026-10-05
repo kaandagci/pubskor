@@ -74,6 +74,17 @@ export type MetricId = (typeof METRICS)[number]['id'];
 
 export const METRIC_IDS: readonly MetricId[] = METRICS.map(m => m.id);
 export const METRIC_BY_ID = Object.fromEntries(METRICS.map(m => [m.id, m])) as Record<MetricId, (typeof METRICS)[number]>;
+
+/**
+ * İçki kriterleri ve türleri herkese açık çıktılarda (paylaşım bağlantısı, paylaşım görseli) gösterilmez:
+ * dışarıya giden her şey yalnızca mekan deneyimini (servis, mekan, hijyen, yemek, alkolsüz seçenekler) anlatır.
+ */
+export const DRINK_GROUPS: readonly GroupId[] = ['bira', 'kokteyl', 'sarap', 'sert'];
+export const isPublicMetric = (id: string): boolean => {
+    const m = METRIC_BY_ID[id as MetricId];
+    return !!m && !DRINK_GROUPS.includes(m.group);
+};
+export const isPublicKind = (k: KindId): boolean => !DRINK_GROUPS.includes(k);
 export const isMetricId = (v: unknown): v is MetricId => typeof v === 'string' && v in METRIC_BY_ID;
 
 /** Her ziyarette puanlanan ortak kriterler. */

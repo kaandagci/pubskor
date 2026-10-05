@@ -9,7 +9,7 @@ import { venueById, visits } from '../state/data';
 import { haptic } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { Share2 } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { TierChip } from '../components/ui';
 import { openShareSheet } from './share-sheet';
 
@@ -32,7 +32,7 @@ function useCountUp(target: number | null, ms = 1300, delay = 250): number | nul
     return v;
 }
 
-/** Masanın kararı: bardak dolar, skor sayarak açılır, kişiler sırayla belirir. */
+/** Masanın kararı: skor halkası dolar, skor sayarak açılır, kişiler sırayla belirir. */
 export function RevealView({ venueName, score, participants, perParticipant, best, actions }: {
     venueName: string;
     score: number | null;
@@ -47,7 +47,7 @@ export function RevealView({ venueName, score, participants, perParticipant, bes
         <div class="reveal">
             <span class="eyebrow">Masanın kararı</span>
             <div class="venue">{venueName}</div>
-            <div style={{ marginTop: '22px' }}><Pint score={score} size={128} pour bubbles /></div>
+            <div style={{ marginTop: '22px' }}><ScoreRing score={score} size={150} stroke={14} showValue={false} animate /></div>
             <div class="big" aria-live="polite">{fmtScore(shown)}</div>
             <TierChip score={score} />
             {best && <p class="muted small mt-12" style={{ animation: 'rise .5s var(--ease) both', animationDelay: '1.6s' }}>{best}</p>}

@@ -6,7 +6,7 @@ import { distance, getPosition, lastPosition, type LatLng } from '../lib/geo';
 import { venueSummaries, wishlist } from '../state/data';
 import { haptic, toastError } from '../state/ui';
 import { Bookmark, KIND_ICONS, LocateFixed, Shuffle, Sparkles } from '../components/icons';
-import { Pint } from '../components/Pint';
+import { ScoreRing } from '../components/ScoreRing';
 import { Spinner, Switch, TierChip, TopBar } from '../components/ui';
 
 type Mood = 'overall' | KindId;
@@ -84,7 +84,7 @@ export function Discover() {
                         <div class="list">
                             {results.map(({ s, value, d }) => (
                                 <a key={s.venue.id} href={`/mekan/${s.venue.id}`} class="rank-row" style={pick === s.venue.id ? { background: 'var(--accent-soft)' } : undefined}>
-                                    <Pint score={value} size={22} />
+                                    <ScoreRing score={value} size={22} />
                                     <div class="grow" style={{ minWidth: 0 }}>
                                         <div class="vrow-title" style={{ fontSize: '16.5px' }}>{s.venue.name}{pick === s.venue.id ? ' 🎯' : ''}</div>
                                         <div class="vrow-meta">{[venueKindLabel(s.venue.kind), s.venue.area, d != null ? fmtDistance(d) : null, s.last ? `son ${fmtRelativeDay(s.last).toLocaleLowerCase('tr')}` : null].filter(Boolean).join(' · ')}</div>

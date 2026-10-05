@@ -1,175 +1,188 @@
-/* Pub Skor tasarım tokenları.
-   Koyu tema varsayılan ("gece pub"), açık tema "gün ışığı". Bileşenler ham renk değil, rol kullanır. */
+/* Pub Skor tasarım tokenları: Apple İnsan Arayüzü Yönergeleri (iOS 26, "Liquid Glass") diline göre.
+   Renkler Apple'ın sistem renkleri ve yüzey katmanları; açık ve koyu temada aynı roller, farklı değerler.
+   Bileşenler ham renk değil rol kullanır. Eski rol adları (--surface-1, --accent…) dosyanın sonunda yeni rollere bağlanır.
+   Tanıtım sayfası (public/tanitim/tokens.css) bu değerlerin bir kopyasını kullanır. */
 
 :root {
-    color-scheme: dark;
-
-    /* Zemin ve yüzeyler */
-    --bg: #0f0c0a;
-    --bg-glow: rgba(242, 169, 59, .10);
-    --surface-1: #1a1512;
-    --surface-2: #221c18;
-    --surface-3: #2c241f;
-    --surface-sheet: #1e1915;
-    --overlay: rgba(6, 4, 3, .62);
-    --line: rgba(255, 228, 196, .075);
-    --line-strong: rgba(255, 228, 196, .15);
-    --hi: inset 0 1px 0 rgba(255, 240, 220, .045);
-
-    /* Metin */
-    --text-1: #f7efe4;
-    --text-2: #c4b5a3;
-    --text-3: #8e7f6e;
-    --text-inverse: #1f1610;
-
-    /* Marka */
-    --accent: #f2a93b;
-    --accent-2: #ffc46b;
-    --accent-ink: #241503;
-    --accent-soft: rgba(242, 169, 59, .14);
-    --accent-line: rgba(242, 169, 59, .45);
-    --beer-top: #ffcf6e;
-    --beer-bottom: #d9821a;
-    --foam: #fff6e6;
-
-    /* Durum (kademe) renkleri: her zaman etiketle birlikte kullanılır */
-    --tier-legend: #34d399;
-    --tier-great: #a3e635;
-    --tier-ok: #fbbf24;
-    --tier-weak: #fb923c;
-    --tier-skip: #f87171;
-    --tier-none: #6f6357;
-    --ok: #34d399;
-    --warn: #fbbf24;
-    --danger: #f87171;
-    --danger-ink: #2a0b0b;
-    --info: #60a5fa;
-
-    /* Kişi renkleri (doğrulanmış kategorik palet, koyu yüzey için) */
-    --p0: #c98500; --p1: #d55181; --p2: #008300; --p3: #3987e5;
-    --p4: #199e70; --p5: #d95926; --p6: #9085e9; --p7: #e66767;
-
-    /* Grafik */
-    --chart-grid: rgba(255, 228, 196, .08);
-    --chart-bar: #f2a93b;
-    --chart-track: rgba(242, 169, 59, .12);
-    --div-neg: #e66767;
-    --div-pos: #3987e5;
-    --div-mid: #6f6357;
-    --seq-1: #7a5218; --seq-2: #a66f1b; --seq-3: #d18f24; --seq-4: #f7b955;
-    --seq-ink-1: #f7efe4; --seq-ink-2: #f7efe4; --seq-ink-3: #241503; --seq-ink-4: #241503;
-
-    /* Yazı */
-    --font-ui: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
-
-    /* Ölçüler */
-    --r-xs: 8px;
-    --r-sm: 12px;
-    --r-md: 16px;
-    --r-lg: 22px;
-    --r-xl: 28px;
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, .35);
-    --shadow-2: 0 10px 30px -12px rgba(0, 0, 0, .65);
-    --shadow-3: 0 24px 60px -20px rgba(0, 0, 0, .8);
-    --ease: cubic-bezier(.2, .8, .2, 1);
-    --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
-    --tabbar-h: 68px;
-    --col: 640px;
-    --gutter: 16px;
-}
-
-/* Açık tema: hem sistem tercihi hem kullanıcı seçimi */
-@media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-        color-scheme: light;
-        --bg: #f6f1e9;
-        --bg-glow: rgba(242, 169, 59, .16);
-        --surface-1: #ffffff;
-        --surface-2: #f3ece2;
-        --surface-3: #e9e0d3;
-        --surface-sheet: #fffdf9;
-        --overlay: rgba(40, 26, 12, .38);
-        --line: rgba(60, 38, 16, .09);
-        --line-strong: rgba(60, 38, 16, .18);
-        --hi: inset 0 1px 0 rgba(255, 255, 255, .6);
-        --text-1: #1f1610;
-        --text-2: #5f5144;
-        --text-3: #85766a;
-        --text-inverse: #f7efe4;
-        --accent: #f2a93b;
-        --accent-2: #e8951c;
-        --accent-soft: rgba(217, 138, 18, .12);
-        --accent-line: rgba(196, 120, 10, .5);
-        --tier-legend: #059669;
-        --tier-great: #65a30d;
-        --tier-ok: #d97706;
-        --tier-weak: #ea580c;
-        --tier-skip: #dc2626;
-        --tier-none: #a39584;
-        --ok: #059669;
-        --warn: #d97706;
-        --danger: #dc2626;
-        --danger-ink: #ffffff;
-        --info: #2563eb;
-        --p0: #eda100; --p1: #e87ba4; --p2: #008300; --p3: #2a78d6;
-        --p4: #1baf7a; --p5: #eb6834; --p6: #4a3aa7; --p7: #e34948;
-        --chart-grid: rgba(60, 38, 16, .09);
-        --chart-bar: #e8951c;
-        --chart-track: rgba(217, 138, 18, .12);
-        --div-neg: #e34948;
-        --div-pos: #2a78d6;
-        --div-mid: #b3a594;
-        --seq-1: #e3a54a; --seq-2: #c97d0e; --seq-3: #9a5a05; --seq-4: #663a02;
-    --seq-ink-1: #1f1610; --seq-ink-2: #1f1610; --seq-ink-3: #fff6e6; --seq-ink-4: #fff6e6;
-        --shadow-1: 0 1px 2px rgba(60, 38, 16, .08);
-        --shadow-2: 0 12px 30px -14px rgba(60, 38, 16, .28);
-        --shadow-3: 0 28px 60px -24px rgba(60, 38, 16, .4);
-    }
-}
-
-:root[data-theme="light"] {
     color-scheme: light;
-    --bg: #f6f1e9;
-    --bg-glow: rgba(242, 169, 59, .16);
-    --surface-1: #ffffff;
-    --surface-2: #f3ece2;
-    --surface-3: #e9e0d3;
-    --surface-sheet: #fffdf9;
-    --overlay: rgba(40, 26, 12, .38);
-    --line: rgba(60, 38, 16, .09);
-    --line-strong: rgba(60, 38, 16, .18);
-    --hi: inset 0 1px 0 rgba(255, 255, 255, .6);
-    --text-1: #1f1610;
-    --text-2: #5f5144;
-    --text-3: #85766a;
-    --text-inverse: #f7efe4;
-    --accent: #f2a93b;
-    --accent-2: #e8951c;
-    --accent-soft: rgba(217, 138, 18, .12);
-    --accent-line: rgba(196, 120, 10, .5);
-    --tier-legend: #059669;
-    --tier-great: #65a30d;
-    --tier-ok: #d97706;
-    --tier-weak: #ea580c;
-    --tier-skip: #dc2626;
-    --tier-none: #a39584;
-    --ok: #059669;
-    --warn: #d97706;
-    --danger: #dc2626;
-    --danger-ink: #ffffff;
-    --info: #2563eb;
+
+    /* Zeminler: gruplu arka plan, onun üstündeki kart / liste bölümü, iç içe üçüncü katman */
+    --bg: #f2f2f7;
+    --bg-elevated: #ffffff;
+    --bg-elevated-2: #f2f2f7;
+    --bg-plain: #ffffff;
+    /* Panel (sheet) zemini ve içindeki hücreler; segment kontrolünün başparmağı */
+    --bg-sheet: #f2f2f7;
+    --bg-sheet-cell: #ffffff;
+    --thumb: #ffffff;
+
+    /* Etiketler (metin): birincil, ikincil, açıklama, dördüncül */
+    --label: #000000;
+    --label-2: rgba(60, 60, 67, .6);
+    --label-3: rgba(60, 60, 67, .3);
+    --label-4: rgba(60, 60, 67, .18);
+    /* Açıklama metni: Apple'ın üçüncül etiketi metin için fazla soluk, ikincil ile arası */
+    --label-hint: rgba(60, 60, 67, .5);
+
+    /* Ayraçlar ve dolgular (kontrol zeminleri) */
+    --separator: rgba(60, 60, 67, .29);
+    --separator-opaque: #c6c6c8;
+    --fill: rgba(120, 120, 128, .2);
+    --fill-2: rgba(120, 120, 128, .16);
+    --fill-3: rgba(118, 118, 128, .12);
+    --fill-4: rgba(116, 116, 128, .08);
+
+    /* Vurgu: sistem turuncusu. Küçük metinde --tint-text (beyaz zeminde 4.5:1 kontrast) */
+    --tint: #ff9500;
+    --tint-text: #c45000;
+    --on-tint: #1f1300;
+    --tint-soft: rgba(255, 149, 0, .14);
+
+    /* Sistem renkleri */
+    --red: #ff3b30; --orange: #ff9500; --yellow: #ffcc00; --green: #34c759; --mint: #00c7be;
+    --teal: #30b0c7; --cyan: #32ade6; --blue: #007aff; --indigo: #5856d6; --purple: #af52de;
+    --pink: #ff2d55; --brown: #a2845e; --gray: #8e8e93;
+
+    /* Kişi renkleri: renk körlüğüne göre doğrulanmış kategorik palet */
     --p0: #eda100; --p1: #e87ba4; --p2: #008300; --p3: #2a78d6;
     --p4: #1baf7a; --p5: #eb6834; --p6: #4a3aa7; --p7: #e34948;
-    --chart-grid: rgba(60, 38, 16, .09);
-    --chart-bar: #e8951c;
-    --chart-track: rgba(217, 138, 18, .12);
+
+    /* Cam malzeme (Liquid Glass): bulanıklaştırılmış, doygunluğu artırılmış yarı saydam katman */
+    --glass: rgba(255, 255, 255, .64);
+    --glass-strong: rgba(255, 255, 255, .82);
+    --glass-edge: rgba(255, 255, 255, .75);
+    --glass-line: rgba(0, 0, 0, .07);
+    --glass-sheen: rgba(255, 255, 255, .55);
+    --glass-blur: blur(22px) saturate(185%);
+    --glass-shadow: 0 10px 30px rgba(0, 0, 0, .1), 0 1px 3px rgba(0, 0, 0, .07);
+    --dim: rgba(0, 0, 0, .3);
+
+    /* Grafik: ıraksak çift ve sıralı rampa (doğrulanmış, değişmedi) */
     --div-neg: #e34948;
     --div-pos: #2a78d6;
     --div-mid: #b3a594;
     --seq-1: #e3a54a; --seq-2: #c97d0e; --seq-3: #9a5a05; --seq-4: #663a02;
     --seq-ink-1: #1f1610; --seq-ink-2: #1f1610; --seq-ink-3: #fff6e6; --seq-ink-4: #fff6e6;
-    --shadow-1: 0 1px 2px rgba(60, 38, 16, .08);
-    --shadow-2: 0 12px 30px -14px rgba(60, 38, 16, .28);
-    --shadow-3: 0 28px 60px -24px rgba(60, 38, 16, .4);
+
+    /* Yazı: Apple cihazlarda SF Pro (sistem fontu), diğerlerinde platformun sistem fontu */
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Helvetica Neue', 'Segoe UI', Roboto, sans-serif;
+    --font-rounded: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+    /* Köşeler: eş merkezli (iç öğe = dış köşe − boşluk) */
+    --r-section: 26px;
+    --r-tile: 22px;
+    --r-control: 12px;
+    --r-sheet: 38px;
+    --r-capsule: 999px;
+
+    /* Hareket: SwiftUI yay eğrileri CSS'te. smooth = Apple varsayılanı, snappy = hızlı, bouncy = esnek */
+    --spring-smooth: linear(0, .065, .1968, .3439, .4816, .6016, .698, .7742, .8329, .8781, .9112, .9358, .9538, .9669, .9765, .9832, .9881, .9916, .9941, .9958, .9971, .9979, 1);
+    --spring-smooth-dur: 560ms;
+    --spring-snappy: linear(0, .0283, .0942, .1816, .2789, .3813, .4767, .565, .6443, .7139, .7755, .8255, .867, .9009, .9287, .9499, .9663, .9788, .988, .9949, .9995, 1.0025, 1.0044, 1.0055, 1.0059, 1.0059, 1.0056, 1.0051, 1.0045, 1.0039, 1.0034, 1.0028, 1.0023, 1.0019, 1.0015, 1.0012, 1);
+    --spring-snappy-dur: 460ms;
+    --spring-bouncy: linear(0, .0315, .1073, .2097, .3249, .4427, .5556, .659, .7499, .8271, .8918, .9417, .9796, 1.0072, 1.026, 1.0376, 1.0436, 1.0454, 1.0441, 1.0406, 1.036, 1.0308, 1.0254, 1.0203, 1.0156, 1.0115, 1.0079, 1.005, 1.0027, 1.001, .9997, .9988, .9983, .998, .9979, .998, 1);
+    --spring-bouncy-dur: 680ms;
+    --ease-ios: cubic-bezier(.25, .1, .25, 1);
+
+    /* Yerleşim */
+    --tabbar-h: 64px;
+    --col: 640px;
+    --gutter: 16px;
+
+    /* ----- Eski rol adları → yeni roller (bileşenler bunları kullanmaya devam eder) ----- */
+    --surface-1: var(--bg-elevated);
+    --surface-2: var(--fill-3);
+    --surface-3: var(--fill-2);
+    --surface-sheet: var(--bg-sheet);
+    --overlay: var(--dim);
+    --line: var(--separator);
+    --line-strong: var(--separator-opaque);
+    --hi: 0 0 #0000;
+    --text-1: var(--label);
+    --text-2: var(--label-2);
+    --text-3: var(--label-hint);
+    --text-inverse: var(--bg-elevated);
+    --accent: var(--tint);
+    --accent-2: var(--tint);
+    --accent-ink: var(--on-tint);
+    --accent-soft: var(--tint-soft);
+    --accent-line: color-mix(in srgb, var(--tint) 55%, transparent);
+    --tier-legend: var(--green);
+    --tier-great: var(--mint);
+    --tier-ok: var(--yellow);
+    --tier-weak: var(--orange);
+    --tier-skip: var(--red);
+    --tier-none: var(--gray);
+    --ok: var(--green);
+    --good: var(--green);
+    --warn: var(--orange);
+    --danger: var(--red);
+    --danger-ink: #ffffff;
+    --info: var(--blue);
+    --chart-grid: var(--separator);
+    --chart-bar: var(--tint);
+    --chart-track: var(--tint-soft);
+    --font-ui: var(--font);
+    --font-display: var(--font);
+    --r-xs: 8px;
+    --r-sm: 12px;
+    --r-md: 16px;
+    --r-lg: var(--r-section);
+    --r-xl: var(--r-sheet);
+    --shadow-1: 0 0 #0000;
+    --shadow-2: 0 8px 24px rgba(0, 0, 0, .08);
+    --shadow-3: var(--glass-shadow);
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --ease-spring: var(--spring-bouncy);
+}
+
+/* Koyu tema: gerçek siyah zemin, katmanlar yükseldikçe açılan griler. Sistem tercihi ya da kullanıcı seçimi. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #000000; --bg-elevated: #1c1c1e; --bg-elevated-2: #2c2c2e; --bg-plain: #000000;
+        --bg-sheet: #1c1c1e; --bg-sheet-cell: #2c2c2e; --thumb: #636366;
+        --label: #ffffff; --label-2: rgba(235, 235, 245, .6); --label-3: rgba(235, 235, 245, .3); --label-4: rgba(235, 235, 245, .16);
+        --label-hint: rgba(235, 235, 245, .48);
+        --separator: rgba(84, 84, 88, .6); --separator-opaque: #38383a;
+        --fill: rgba(120, 120, 128, .36); --fill-2: rgba(120, 120, 128, .32); --fill-3: rgba(118, 118, 128, .24); --fill-4: rgba(118, 118, 128, .18);
+        --tint: #ff9f0a; --tint-text: #ff9f0a; --on-tint: #1f1300; --tint-soft: rgba(255, 159, 10, .18);
+        --red: #ff453a; --orange: #ff9f0a; --yellow: #ffd60a; --green: #30d158; --mint: #63e6e2;
+        --teal: #40c8e0; --cyan: #64d2ff; --blue: #0a84ff; --indigo: #5e5ce6; --purple: #bf5af2;
+        --pink: #ff375f; --brown: #ac8e68; --gray: #8e8e93;
+        --p0: #c98500; --p1: #d55181; --p2: #008300; --p3: #3987e5; --p4: #199e70; --p5: #d95926; --p6: #9085e9; --p7: #e66767;
+        --glass: rgba(44, 44, 48, .58); --glass-strong: rgba(48, 48, 52, .8); --glass-edge: rgba(255, 255, 255, .16);
+        --glass-line: rgba(255, 255, 255, .06); --glass-sheen: rgba(255, 255, 255, .1);
+        --glass-shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .4); --dim: rgba(0, 0, 0, .5);
+        --div-neg: #e66767; --div-pos: #3987e5; --div-mid: #6f6357;
+        --seq-1: #7a5218; --seq-2: #a66f1b; --seq-3: #d18f24; --seq-4: #f7b955;
+        --seq-ink-1: #f7efe4; --seq-ink-2: #f7efe4; --seq-ink-3: #241503; --seq-ink-4: #241503;
+        --shadow-2: 0 8px 24px rgba(0, 0, 0, .4);
+    }
+}
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #000000; --bg-elevated: #1c1c1e; --bg-elevated-2: #2c2c2e; --bg-plain: #000000;
+    --bg-sheet: #1c1c1e; --bg-sheet-cell: #2c2c2e; --thumb: #636366;
+    --label: #ffffff; --label-2: rgba(235, 235, 245, .6); --label-3: rgba(235, 235, 245, .3); --label-4: rgba(235, 235, 245, .16);
+    --label-hint: rgba(235, 235, 245, .48);
+    --separator: rgba(84, 84, 88, .6); --separator-opaque: #38383a;
+    --fill: rgba(120, 120, 128, .36); --fill-2: rgba(120, 120, 128, .32); --fill-3: rgba(118, 118, 128, .24); --fill-4: rgba(118, 118, 128, .18);
+    --tint: #ff9f0a; --tint-text: #ff9f0a; --on-tint: #1f1300; --tint-soft: rgba(255, 159, 10, .18);
+    --red: #ff453a; --orange: #ff9f0a; --yellow: #ffd60a; --green: #30d158; --mint: #63e6e2;
+    --teal: #40c8e0; --cyan: #64d2ff; --blue: #0a84ff; --indigo: #5e5ce6; --purple: #bf5af2;
+    --pink: #ff375f; --brown: #ac8e68; --gray: #8e8e93;
+    --p0: #c98500; --p1: #d55181; --p2: #008300; --p3: #3987e5; --p4: #199e70; --p5: #d95926; --p6: #9085e9; --p7: #e66767;
+    --glass: rgba(44, 44, 48, .58); --glass-strong: rgba(48, 48, 52, .8); --glass-edge: rgba(255, 255, 255, .16);
+    --glass-line: rgba(255, 255, 255, .06); --glass-sheen: rgba(255, 255, 255, .1);
+    --glass-shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .4); --dim: rgba(0, 0, 0, .5);
+    --div-neg: #e66767; --div-pos: #3987e5; --div-mid: #6f6357;
+    --seq-1: #7a5218; --seq-2: #a66f1b; --seq-3: #d18f24; --seq-4: #f7b955;
+    --seq-ink-1: #f7efe4; --seq-ink-2: #f7efe4; --seq-ink-3: #241503; --seq-ink-4: #241503;
+    --shadow-2: 0 8px 24px rgba(0, 0, 0, .4);
+}
+
+/* Hareketi azalt: yaylar ve kaydırmalar kapanır, yalnızca kısa geçişler kalır */
+@media (prefers-reduced-motion: reduce) {
+    :root { --spring-smooth-dur: 1ms; --spring-snappy-dur: 1ms; --spring-bouncy-dur: 1ms; }
 }
