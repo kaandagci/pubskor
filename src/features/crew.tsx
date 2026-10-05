@@ -50,7 +50,8 @@ export function openInvite() {
 export function CrewPage() {
     const { query } = useLocation();
     const s = snapshot.value;
-    useEffect(() => { if (query.davet === '1') setTimeout(openInvite, 250); }, []);
+    // Eski sürümün bıraktığı ?davet=1 adresi her açılışta daveti açmasın
+    useEffect(() => { if (query.davet) history.replaceState(null, '', '/ekip'); }, []);
     if (!s) return null;
     const h = crewHighlights.value;
     const list = people.value;

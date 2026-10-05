@@ -4,12 +4,18 @@ import { fromLegacy, legacyPhotoId } from '../shared/legacy';
 import { analyze } from '../shared/scoring';
 import { foldKey } from '../shared/text';
 import { isVenueKind } from '../shared/metrics';
+import { isPlaceId } from '../shared/places';
 import { cleanLine } from '../shared/text';
 import type { Participant, SharedVisit, Venue, VenueInput, Visit } from '../shared/types';
 import { LIMITS, validateTags, validateVenueInput, validateVisitInput, type CleanVisitInput } from '../shared/validate';
 import { authMember, loadCrew, requireOwner, safeEq, snapshot, type CrewDoc, type Ctx } from './crew';
 import { HttpError, json, readBinary, readJSON } from './http';
+import { syncCrewActivity } from './popular';
 import { withCrew } from './routes-crew';
+
+/** Anonim popülerlik kaydını eşitler (ekip katkıyı kapattıysa geri alır). */
+export const activity = (ctx: Ctx, crew: CrewDoc, venueId: string, date: string) =>
+    syncCrewActivity(ctx.kv, ctx.statsSalt, crew, venueId, date, ctx.now());
 
 // ----- Mekan çözümleme -----
 
@@ -21,12 +27,14 @@ export function resolveVenue(crew: CrewDoc, input: { venueId: string | null; ven
     }
     const vi = input.venue!;
     const same = crew.venues.find(v => v.id === vi.id)
+        ?? (vi.placeId ? crew.venues.find(v => v.placeId === vi.placeId) : undefined)
         ?? (vi.osm ? crew.venues.find(v => v.osm === vi.osm) : undefined)
         ?? crew.venues.find(v => foldKey(v.name) === foldKey(vi.name) && (!v.area || !vi.area || foldKey(v.area) === foldKey(vi.area ?? '')));
     if (same) {
         // Eksik konum bilgisini tamamla
         if (same.lat == null && vi.lat != null) { same.lat = vi.lat; same.lng = vi.lng; }
         if (!same.osm && vi.osm) same.osm = vi.osm;
+        if (!same.placeId && vi.placeId) same.placeId = vi.placeId;
         if (!same.area && vi.area) same.area = vi.area;
         if (!same.address && vi.address) same.address = vi.address;
         if ((!same.kind || same.kind === 'diger') && vi.kind && vi.kind !== 'diger') same.kind = vi.kind;
@@ -35,7 +43,8 @@ export function resolveVenue(crew: CrewDoc, input: { venueId: string | null; ven
     if (crew.venues.length >= LIMITS.venues) throw new HttpError(507, 'Mekan sınırına ulaşıldı');
     const venue: Venue = {
         id: vi.id, name: vi.name, kind: vi.kind ?? 'diger', area: vi.area ?? '', address: vi.address ?? '',
-        lat: vi.lat ?? null, lng: vi.lng ?? null, osm: vi.osm ?? null, tags: [], wish: null, createdAt: now, createdBy: by
+        lat: vi.lat ?? null, lng: vi.lng ?? null, osm: vi.osm ?? null, placeId: vi.placeId ?? null,
+        tags: [], wish: null, createdAt: now, createdBy: by
     };
     crew.venues.push(venue);
     return venue.id;
@@ -83,6 +92,7 @@ export async function createVisit(ctx: Ctx, req: Request) {
     const r0 = validateVisitInput(await readJSON(req));
     if (!r0.ok) throw new HttpError(400, r0.error);
     const r = await withCrew(ctx, req, (crew, me) => insertVisit(crew, r0.value, me.id, ctx.now()));
+    if (!r.result.duplicate) await activity(ctx, r.crew, r.result.visit.venueId, r.result.visit.date);
     return json({ visitId: r.result.visit.id, duplicate: r.result.duplicate, snapshot: r.snap() }, r.result.duplicate ? 200 : 201);
 }
 
@@ -92,9 +102,11 @@ export async function updateVisit(ctx: Ctx, req: Request, p: Record<string, stri
     if (!r0.ok) throw new HttpError(400, r0.error);
     const c = r0.value;
     let removedPhotos: string[] = [];
+    let before: { venueId: string; date: string } | null = null;
     const r = await withCrew(ctx, req, (crew, me) => {
         const v = findVisit(crew, p.id);
         if (v.deletedAt) throw new HttpError(410, 'Bu ziyaret silinmiş');
+        before = { venueId: v.venueId, date: v.date };
         if (c.baseUpdatedAt != null && c.baseUpdatedAt !== v.updatedAt) {
             throw new HttpError(409, 'Bu ziyaret sen düzenlerken başka biri tarafından güncellendi', { code: 'conflict', current: v });
         }
@@ -110,6 +122,9 @@ export async function updateVisit(ctx: Ctx, req: Request, p: Record<string, stri
         return v;
     });
     await Promise.allSettled(removedPhotos.filter(id => id.startsWith('ph_')).map(id => ctx.kv.delete('photo/' + id)));
+    const old = before as { venueId: string; date: string } | null;
+    if (old && (old.venueId !== r.result.venueId || old.date !== r.result.date)) await activity(ctx, r.crew, old.venueId, old.date);
+    await activity(ctx, r.crew, r.result.venueId, r.result.date);
     return json({ visitId: r.result.id, snapshot: r.snap() });
 }
 
@@ -118,9 +133,10 @@ export async function deleteVisit(ctx: Ctx, req: Request, p: Record<string, stri
         const v = findVisit(crew, p.id);
         if (!v.deletedAt) { v.deletedAt = ctx.now(); v.updatedBy = me.id; }
         const sid = v.shareId; v.shareId = null;
-        return sid;
+        return { sid, venueId: v.venueId, date: v.date };
     });
-    if (r.result) await ctx.kv.delete('share/' + r.result);
+    if (r.result.sid) await ctx.kv.delete('share/' + r.result.sid);
+    await activity(ctx, r.crew, r.result.venueId, r.result.date);
     return json({ snapshot: r.snap() });
 }
 
@@ -128,7 +144,9 @@ export async function restoreVisit(ctx: Ctx, req: Request, p: Record<string, str
     const r = await withCrew(ctx, req, (crew, me) => {
         const v = findVisit(crew, p.id);
         v.deletedAt = null; v.updatedBy = me.id;
+        return v;
     });
+    await activity(ctx, r.crew, r.result.venueId, r.result.date);
     return json({ snapshot: r.snap() });
 }
 
@@ -153,9 +171,19 @@ export async function updateVenue(ctx: Ctx, req: Request, p: Record<string, stri
             if (b.lat !== undefined || b.lng !== undefined) { v.lat = loc.lat ?? null; v.lng = loc.lng ?? null; }
             if (b.osm !== undefined) v.osm = loc.osm ?? null;
         }
+        // Kataloğa bağlama (istemci arka planda eşleştirir); yalnızca biçim kontrolü
+        if (b.placeId !== undefined) {
+            if (b.placeId !== null && !isPlaceId(b.placeId)) throw new HttpError(400, 'Geçersiz mekan kimliği');
+            v.placeId = (b.placeId as string | null) ?? null;
+        }
         if (b.kind !== undefined && isVenueKind(b.kind)) v.kind = b.kind;
         if (b.tags !== undefined) v.tags = validateTags(b.tags);
     });
+    // Mekan kataloğa yeni bağlandıysa son ziyaretleri anonim popülerliğe ekle
+    if (b.placeId) {
+        const dates = new Set(r.crew.visits.filter(v => v.venueId === p.id && !v.deletedAt).map(v => v.date));
+        for (const d of dates) await activity(ctx, r.crew, p.id, d);
+    }
     return json({ snapshot: r.snap() });
 }
 

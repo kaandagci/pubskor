@@ -2,17 +2,20 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { foldKey, todayLocal } from '../../shared/text';
 import { fmtScore } from '../lib/format';
 import { request } from '../lib/api';
+import { local } from '../lib/storage';
 import { crewStatus, syncCrew, syncError } from '../state/crew';
 import { failedItems, isOwner, me, snapshot, venueById, visits } from '../state/data';
 import { draft } from '../state/draft';
 import { discard, flushing, forceRetry, outbox } from '../state/outbox';
-import { activeCrewId, activeMembership, memberships, setActiveCrew } from '../state/session';
+import { activeCrewId, activeMembership, crewAuth, memberships, setActiveCrew } from '../state/session';
 import { online, openSheet, confirmSheet } from '../state/ui';
 import { Avatar } from '../components/Avatar';
-import { Check, ChevronDown, ChevronRight, CloudOff, History, Link as LinkIcon, Pencil, Plus, Radio, RefreshCw, Search, Settings, TriangleAlert, Upload, Users, X } from '../components/icons';
+import { Check, ChevronDown, ChevronRight, CloudOff, Compass, History, Link as LinkIcon, Pencil, Plus, Radio, RefreshCw, Search, Settings, TriangleAlert, Upload, Users, X } from '../components/icons';
+import { profile } from '../state/user';
 import { Pint } from '../components/Pint';
 import { Empty, Spinner, Stat, TopBar } from '../components/ui';
 import { VisitHero, VisitRow } from '../components/visit';
+import { openInvite } from './crew';
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
@@ -72,7 +75,7 @@ function LegacyPrompt() {
         if (!isOwner.value || !s || s.legacyImported) return;
         const m = activeMembership.value;
         if (!m) return;
-        request<{ available: number; imported: boolean }>('GET', '/api/crew/legacy', { token: m.token }).then(setInfo).catch(() => undefined);
+        request<{ available: number; imported: boolean }>('GET', '/api/crew/legacy', crewAuth(m)).then(setInfo).catch(() => undefined);
     }, [s?.id, isOwner.value, s?.legacyImported]);
     if (!info || info.imported || !info.available || s?.legacyImported) return null;
     return (
@@ -84,9 +87,71 @@ function LegacyPrompt() {
     );
 }
 
+/** Yeni ekipte arkadaş davet hatırlatması. Kapatılınca o ekip için bir daha görünmez. */
+function InviteCard({ crewId, members }: { crewId: string; members: number }) {
+    const key = 'invite-card:' + crewId;
+    const [hidden, setHidden] = useState(() => local.get<boolean>(key, false));
+    if (hidden || members >= 2) return null;
+    return (
+        <div class="banner mt-8">
+            <span class="b-icon"><Users /></span>
+            <div class="grow" style={{ minWidth: 0 }}>
+                <b>Ekibin hazır</b>
+                <div class="small muted">Arkadaşlarını davet et; herkes kendi telefonundan puan versin.</div>
+            </div>
+            <button class="btn btn-sm btn-primary" onClick={openInvite}>Davet et</button>
+            <button class="icon-btn" aria-label="Kapat" onClick={() => { local.set(key, true); setHidden(true); }}><X /></button>
+        </div>
+    );
+}
+
 type Filter = 'all' | 'month' | 'mine' | 'legend';
 
+/** Hesabı olup henüz ekibi olmayan kullanıcı. */
+function NoCrewHome() {
+    const p = profile.value;
+    return (
+        <>
+            <TopBar left={<span class="brand-word" style={{ fontSize: '19px' }}><span class="brand-mark"><Pint score={8} size={14} /></span>Pub Skor</span>}
+                actions={<a class="icon-btn" href="/ayarlar" aria-label="Ayarlar"><Settings /></a>} />
+            <main class="page">
+                <div class="page-head">
+                    <h1 class="display">{p ? `Merhaba ${p.name.split(' ')[0]}` : 'Merhaba'}</h1>
+                    <p>Ekip, birlikte gezdiğin arkadaş grubun. Puanlar, sıralama ve istatistikler ekip içinde birikir.</p>
+                </div>
+                <div class="stack gap-12">
+                    <a class="banner" href="/ekip/kur">
+                        <span class="b-icon"><Plus /></span>
+                        <div class="grow"><b>Ekip kur</b><div class="small muted">Sonra arkadaşlarını bağlantı ya da QR ile çağır</div></div>
+                        <ChevronRight class="faint" />
+                    </a>
+                    <a class="banner" href="/katil">
+                        <span class="b-icon"><LinkIcon /></span>
+                        <div class="grow"><b>Davet bağlantım var</b><div class="small muted">Arkadaşının gönderdiği bağlantıyı aç</div></div>
+                        <ChevronRight class="faint" />
+                    </a>
+                    <a class="banner" href="/masa">
+                        <span class="b-icon"><Radio /></span>
+                        <div class="grow"><b>Masa koduyla katıl</b><div class="small muted">Masada biri canlı puanlama açtıysa</div></div>
+                        <ChevronRight class="faint" />
+                    </a>
+                    <a class="banner" href="/kesfet">
+                        <span class="b-icon"><Compass /></span>
+                        <div class="grow"><b>İstanbul'da bu hafta</b><div class="small muted">Çevrendeki çok gidilen mekanlar</div></div>
+                        <ChevronRight class="faint" />
+                    </a>
+                </div>
+            </main>
+        </>
+    );
+}
+
 export function Home() {
+    if (!memberships.value.length) return <NoCrewHome />;
+    return <CrewHome />;
+}
+
+function CrewHome() {
     const s = snapshot.value;
     const [filter, setFilter] = useState<Filter>('all');
     const [q, setQ] = useState('');
@@ -215,6 +280,7 @@ export function Home() {
                         <span class="btn btn-sm btn-secondary">Devam et</span>
                     </a>
                 )}
+                <InviteCard crewId={s.id} members={s.members.filter(m => !m.removed).length} />
                 <LegacyPrompt />
 
                 {list.length > 0 && (
@@ -231,7 +297,7 @@ export function Home() {
                         title="Bardaklar boş"
                         action={<div class="stack gap-8" style={{ alignItems: 'center' }}>
                             <a class="btn btn-primary btn-lg" href="/yeni"><Plus />İlk ziyareti ekle</a>
-                            {s.members.filter(m => !m.removed).length < 2 && <a class="btn btn-ghost" href="/ekip?davet=1"><Users />Önce arkadaşlarını davet et</a>}
+                            {s.members.filter(m => !m.removed).length < 2 && <button class="btn btn-ghost" onClick={openInvite}><Users />Önce arkadaşlarını davet et</button>}
                         </div>}
                     >
                         İlk pub ziyaretinizi puanlayın; skorlar, sıralama ve istatistikler burada birikecek.

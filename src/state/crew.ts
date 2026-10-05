@@ -3,7 +3,7 @@ import { signal } from '@preact/signals';
 import type { CrewSnapshot } from '../../shared/types';
 import { ApiError, request } from '../lib/api';
 import { idb } from '../lib/storage';
-import { activeMembership, removeMembership, updateMembership } from './session';
+import { activeMembership, crewAuth, removeMembership, updateMembership } from './session';
 import { toast } from './ui';
 
 export const snapshot = signal<CrewSnapshot | null>(null);
@@ -41,7 +41,7 @@ export async function syncCrew(opts: { force?: boolean } = {}): Promise<void> {
         try {
             const cur = snapshot.value;
             const etag = cur && cur.id === crewId ? `W/"r${cur.rev}-${cur.me}"` : undefined;
-            const s = await request<CrewSnapshot | null>('GET', '/api/crew', { token: m.token, headers: etag ? { 'if-none-match': etag } : {} });
+            const s = await request<CrewSnapshot | null>('GET', '/api/crew', { ...crewAuth(m), headers: etag ? { 'if-none-match': etag } : {} });
             if (activeMembership.value?.crewId !== crewId) return;
             if (s) applySnapshot(s);
             syncError.value = null;
@@ -61,12 +61,13 @@ export async function syncCrew(opts: { force?: boolean } = {}): Promise<void> {
 /** Jeton geçersizse ya da ekip silindiyse üyeliği bu cihazdan kaldırır. */
 export function handleAuthError(e: unknown, crewId: string): boolean {
     if (!(e instanceof ApiError) || e.status !== 401) return false;
+    if (e.code === 'login_required') return false; // hesap oturumu düştü: üyelik silinmez, giriş istenir
     const m = activeMembership.value;
     const name = m?.crewId === crewId ? m.crewName : 'ekip';
     removeMembership(crewId);
     void idb.del('crew:' + crewId);
     if (loadedFor === crewId) { loadedFor = null; snapshot.value = null; crewStatus.value = 'idle'; }
-    toast(e.code === 'crew_gone' ? `“${name}” ekibi artık yok` : `Bu cihazın “${name}” erişimi sona erdi`, 'error');
+    toast(e.code === 'crew_gone' ? `“${name}” ekibi artık yok` : `“${name}” ekibine erişimin sona erdi`, 'error');
     return true;
 }
 
@@ -75,7 +76,7 @@ export async function mutate<T = { snapshot?: CrewSnapshot }>(method: string, pa
     const m = activeMembership.value;
     if (!m) throw new ApiError('Önce bir ekibe katıl', 401);
     try {
-        const r = await request<T & { snapshot?: CrewSnapshot }>(method, path, { token: m.token, body });
+        const r = await request<T & { snapshot?: CrewSnapshot }>(method, path, { ...crewAuth(m), body });
         if (r?.snapshot) applySnapshot(r.snapshot);
         return r;
     } catch (e) {

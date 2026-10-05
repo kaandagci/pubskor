@@ -1,8 +1,12 @@
 // API yönlendiricisi. Netlify fonksiyonu, yerel geliştirme sunucusu ve testler aynı uygulamayı kullanır.
 import type { Ctx } from './crew';
 import { HttpError, fail } from './http';
+import type { Identity } from './identity';
 import type { KV, LegacyStores } from './kv';
 import * as crew from './routes-crew';
+import * as me from './routes-me';
+import * as popular from './routes-popular';
+import type { CatalogPlace } from '../shared/places';
 import * as tables from './routes-tables';
 import * as visits from './routes-visits';
 
@@ -13,6 +17,14 @@ const ROUTES: [string, string, Handler][] = [
     ['POST', '/api/auth/crew', crew.createCrew],
     ['POST', '/api/auth/preview', crew.previewCrew],
     ['POST', '/api/auth/join', crew.joinCrew],
+
+    // Hesap
+    ['GET', '/api/me', me.getMe],
+    ['POST', '/api/me', me.createMe],
+    ['PATCH', '/api/me', me.updateMeProfile],
+    ['DELETE', '/api/me', me.deleteMe],
+    ['POST', '/api/me/attach', me.attachTokens],
+    ['POST', '/api/dev/login', me.devLogin],
 
     // Ekip
     ['GET', '/api/crew', crew.getCrew],
@@ -41,6 +53,10 @@ const ROUTES: [string, string, Handler][] = [
     ['GET', '/api/crew/legacy', visits.legacyStatus],
     ['POST', '/api/crew/legacy', visits.legacyImport],
 
+    // Popüler mekanlar ve "Buradayım"
+    ['GET', '/api/popular', popular.getPopular],
+    ['POST', '/api/checkin', popular.checkin],
+
     // Herkese açık okumalar
     ['GET', '/api/shares/:sid', visits.getShare],
     ['GET', '/api/photos/:pid', visits.getPhoto],
@@ -65,13 +81,21 @@ const compiled = ROUTES.map(([method, pattern, handler]) => {
 
 export interface AppOptions {
     kv: KV;
+    identity: Identity;
     legacy?: LegacyStores | null;
     adminKey?: string;
+    statsSalt?: string;
+    /** Yerel geliştirme / test: geliştirici giriş ucu açılır. Üretimde asla true olmamalı. */
+    dev?: boolean;
+    placeLookup?: (id: string) => CatalogPlace | null | undefined;
     now?: () => number;
 }
 
 export function createApp(opts: AppOptions) {
-    const ctx: Ctx = { kv: opts.kv, legacy: opts.legacy ?? null, adminKey: opts.adminKey ?? '', now: opts.now ?? Date.now };
+    const ctx: Ctx = {
+        kv: opts.kv, identity: opts.identity, legacy: opts.legacy ?? null, adminKey: opts.adminKey ?? '',
+        statsSalt: opts.statsSalt || opts.adminKey || 'pubskor-stats', dev: !!opts.dev, placeLookup: opts.placeLookup, now: opts.now ?? Date.now
+    };
     return async function handle(req: Request): Promise<Response> {
         const { pathname } = new URL(req.url);
         let pathMatched = false;

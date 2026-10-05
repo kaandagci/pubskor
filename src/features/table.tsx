@@ -16,6 +16,7 @@ import { QR } from '../components/QR';
 import { AsyncButton, Empty, Loading, Switch, TopBar } from '../components/ui';
 import { Rater } from './rate';
 import { RevealView, bestLine } from './reveal';
+import { authUser } from '../lib/auth';
 
 const POLL_MS = 2500;
 
@@ -134,9 +135,12 @@ export function LiveTable() {
                 actions={isMember && view.visitId ? <>
                     <button class="btn btn-primary btn-lg" onClick={() => route(`/ziyaret/${view.visitId}`, true)}>Ziyareti gör</button>
                     <a class="btn btn-ghost" href="/">Ana sayfa</a>
+                </> : authUser.value ? <>
+                    <a class="btn btn-primary btn-lg" href="/ekip/kur">Kendi ekibini kur</a>
+                    <a class="btn btn-ghost" href="/">Ana sayfa</a>
                 </> : <>
-                    <a class="btn btn-primary btn-lg" href="/hosgeldin">Kendi ekibini kur</a>
-                    <p class="small muted">Pub Skor ile arkadaşlarınla gittiğiniz mekanları puanlayın.</p>
+                    <a class="btn btn-primary btn-lg" href="/kayit">Hesap oluştur</a>
+                    <p class="small muted">Ücretsiz hesapla kendi ekibini kur; bu masanın ekibi seni davet ederse geçmiş puanların profiline bağlanır.</p>
                 </>}
             />
         );

@@ -1,4 +1,5 @@
 // Sunucu istemcisi: kimlik başlığı, zaman aşımı, anlaşılır hata mesajları.
+import { authToken } from './auth';
 
 export class ApiError extends Error {
     constructor(
@@ -14,7 +15,10 @@ export class ApiError extends Error {
 }
 
 export interface RequestOpts {
+    /** Özel anahtar (canlı masa koltuğu ya da eski cihaz anahtarı). Verilmezse hesabın anahtarı kullanılır. */
     token?: string | null;
+    /** Ekip isteklerinde hangi ekip (X-Crew-Id). */
+    crew?: string | null;
     body?: unknown;
     raw?: Blob | ArrayBuffer;
     headers?: Record<string, string>;
@@ -24,7 +28,9 @@ export interface RequestOpts {
 
 export async function request<T = any>(method: string, path: string, opts: RequestOpts = {}): Promise<T> {
     const headers: Record<string, string> = { ...opts.headers };
-    if (opts.token) headers.authorization = 'Bearer ' + opts.token;
+    const token = opts.token || (path.startsWith('/api/') ? await authToken() : null);
+    if (token) headers.authorization = 'Bearer ' + token;
+    if (opts.crew) headers['x-crew-id'] = opts.crew;
     let body: BodyInit | undefined;
     if (opts.raw !== undefined) body = opts.raw;
     else if (opts.body !== undefined) { headers['content-type'] = 'application/json'; body = JSON.stringify(opts.body); }

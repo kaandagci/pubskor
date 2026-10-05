@@ -9,6 +9,12 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Katalogda olmayan karo: boş liste (uygulamanın HTML'ine düşmesin)
+[[redirects]]
+  from = "/places/*"
+  to = "/places/empty.json"
+  status = 404
+
 # Tek sayfalık uygulama: bilinmeyen yollar uygulamaya düşer (API yolları fonksiyonlara gider)
 [[redirects]]
   from = "/*"
@@ -28,6 +34,11 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/places/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 
 [[headers]]
   for = "/sw.js"

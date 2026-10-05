@@ -10,17 +10,18 @@ import { APP_VERSION } from '../config';
 import { request } from '../lib/api';
 import { personClass } from '../lib/colors';
 import { fmtDate, initials } from '../lib/format';
-import { copyText, download, shareNative } from '../lib/share';
+import { download } from '../lib/share';
 import { local } from '../lib/storage';
 import { forgetCrewCache, mutate, syncCrew } from '../state/crew';
 import { consent, setConsent } from '../state/consent';
 import { deletedVisits, isOwner, me, snapshot, venueById, venueName } from '../state/data';
 import { enqueue, storePhoto } from '../state/outbox';
-import { activeMembership, memberships, removeMembership, updateMembership } from '../state/session';
+import { activeMembership, crewAuth, memberships, removeMembership } from '../state/session';
+import { logout, profile, updateProfile } from '../state/user';
+import { authMessage, setPassword } from '../lib/auth';
 import { applyTheme, confirmSheet, openSheet, themePref, toast, toastError, type ThemePref } from '../state/ui';
 import { Avatar } from '../components/Avatar';
-import { ChevronRight, Crown, Download, FileText, History, Link as LinkIcon, LogOut, QrCode, RefreshCw, Shield, Smartphone, Trash2, Undo2, Upload, UserPlus, Users } from '../components/icons';
-import { QR } from '../components/QR';
+import { ChevronRight, Crown, Download, FileText, History, KeyRound, LogOut, RefreshCw, Shield, Trash2, Undo2, Upload, UserPlus, Users } from '../components/icons';
 import { AsyncButton, Segmented, Spinner, Switch, TopBar } from '../components/ui';
 import { openInvite } from './crew';
 
@@ -49,14 +50,34 @@ function ProfileSheet({ close }: { close: () => void }) {
     );
 }
 
-function DeviceLink() {
-    const m = activeMembership.value!;
-    const url = `${location.origin}/bagla#${m.token}`;
+/** Hesap profili (yeni ekiplerde varsayılan ad ve renk). */
+function AccountSheet({ close }: { close: () => void }) {
+    const p = profile.value!;
+    const [name, setName] = useState(p.name);
+    const [color, setColor] = useState(p.color);
     return (
-        <div class="center">
-            <QR value={url} label="Cihaz bağlama QR kodu" />
-            <p class="muted small mt-16">Diğer telefonunun kamerasıyla okut; o cihaz da <b>{me.value?.name}</b> olarak ekibe bağlanır. <b>Bu kod sana özel giriş anahtarıdır; kimseyle paylaşma.</b></p>
-            <button class="btn btn-secondary btn-block mt-16" onClick={async () => toast((await copyText(url)) ? 'Bağlantı kopyalandı' : 'Kopyalanamadı')}><LinkIcon />Bağlantıyı kopyala</button>
+        <div>
+            <div class="center mb-16"><span class={`avatar xl ${personClass(color)}`}>{initials(name || '?')}</span></div>
+            <input class="input" value={name} maxLength={LIMITS.personName} onInput={e => setName((e.target as HTMLInputElement).value)} aria-label="Adın" />
+            <div class="row-wrap mt-16" role="radiogroup" aria-label="Renk">
+                {[0, 1, 2, 3, 4, 5, 6, 7].map(c => <button key={c} role="radio" aria-checked={c === color} class={`avatar ${personClass(c)}`} style={{ '--size': '38px', opacity: c === color ? 1 : 0.5 }} onClick={() => setColor(c)} aria-label={`Renk ${c + 1}`} />)}
+            </div>
+            <p class="hint mt-12">Yeni ekiplerde varsayılan adın. Her ekipteki adını ekip profilinden ayrıca değiştirebilirsin.</p>
+            <AsyncButton class="btn btn-primary btn-block mt-16" disabled={!name.trim()} onClick={async () => {
+                try { await updateProfile({ name, color }); toast('Hesap profili güncellendi'); close(); } catch (e) { toastError(e); }
+            }}>Kaydet</AsyncButton>
+        </div>
+    );
+}
+
+function PasswordSheet({ close }: { close: () => void }) {
+    const [pw, setPw] = useState('');
+    return (
+        <div>
+            <input class="input" type="password" autoComplete="new-password" placeholder="Yeni şifre (en az 8 karakter)" value={pw} onInput={e => setPw((e.target as HTMLInputElement).value)} />
+            <AsyncButton class="btn btn-primary btn-block mt-16" disabled={pw.length < 8} onClick={async () => {
+                try { await setPassword(pw); toast('Şifren güncellendi'); close(); } catch (e) { toast(authMessage(e), 'error'); }
+            }}>Kaydet</AsyncButton>
         </div>
     );
 }
@@ -67,14 +88,6 @@ function MemberRow({ m }: { m: Member }) {
         title: m.name,
         render: close => (
             <div class="menu">
-                <button class="menu-item" onClick={async () => {
-                    close();
-                    try {
-                        const r = await mutate<{ token: string }>('POST', `/api/crew/members/${m.id}/relink`);
-                        const url = `${location.origin}/bagla#${r.token}`;
-                        openSheet({ title: `${m.name} için giriş bağlantısı`, render: () => <div class="center"><QR value={url} label="Giriş QR" /><p class="muted small mt-16">Cihazını kaybeden {m.name} bu kodla tekrar girebilir. Eski cihazlarının erişimi kapandı. Yalnızca {m.name} ile paylaş.</p><button class="btn btn-secondary btn-block mt-16" onClick={() => shareNative({ url }).then(ok => { if (!ok) void copyText(url).then(() => toast('Kopyalandı')); })}>Paylaş</button></div> });
-                    } catch (e) { toastError(e); }
-                }}><QrCode />Yeni giriş bağlantısı üret<span class="mi-sub">Cihazını kaybettiyse</span></button>
                 <button class="menu-item" onClick={async () => {
                     close();
                     if (!(await confirmSheet({ title: `${m.name} ekip kurucusu olsun mu?`, body: 'Kurucu yetkileri ona geçer; sen normal üye olursun.', confirm: 'Devret' }))) return;
@@ -104,7 +117,7 @@ function LegacyImport() {
     const m = activeMembership.value;
     useEffect(() => {
         if (!isOwner.value || !m) return;
-        request('GET', '/api/crew/legacy', { token: m.token }).then(setInfo).catch(() => undefined);
+        request('GET', '/api/crew/legacy', crewAuth(m)).then(setInfo).catch(() => undefined);
     }, [m?.crewId]);
     if (!info || !info.available) return null;
     const run = async () => {
@@ -224,17 +237,36 @@ export function Settings() {
     const s = snapshot.value;
     const m = activeMembership.value;
     const owner = isOwner.value;
+    const account = profile.value;
     const [crewName, setCrewName] = useState(s?.name ?? '');
     // Ekip verisi sayfa açıldıktan sonra gelirse alanı doldur
     useEffect(() => { if (s?.name) setCrewName(s.name); }, [s?.name]);
 
-    const leaveDevice = async () => {
-        if (!m) return;
-        if (!(await confirmSheet({ title: 'Bu cihazdan çıkılsın mı?', body: `“${m.crewName}” bu cihazdan kaldırılır. Ekip ve verileri silinmez; başka cihazdan ya da yeni bir davetle geri dönebilirsin.`, confirm: 'Çık', danger: true }))) return;
-        removeMembership(m.crewId);
-        forgetCrewCache(m.crewId);
-        toast('Bu cihazdan çıkıldı', 'info');
-        route(memberships.value.length ? '/' : '/hosgeldin', true);
+    const signOut = async () => {
+        if (!(await confirmSheet({ title: 'Çıkış yapılsın mı?', body: 'Bu cihazdaki ekip kopyaları silinir. Tekrar giriş yapınca hepsi geri gelir.', confirm: 'Çıkış yap' }))) return;
+        await logout();
+        route('/hosgeldin', true);
+    };
+    const deleteAccount = () => {
+        let typed = '';
+        openSheet({
+            title: 'Hesabını sil',
+            render: close => (
+                <div>
+                    <p class="muted">Hesabın ve profilin kalıcı olarak silinir. Ekiplerde adın “Silinmiş üye” olur; puanların ekibin istatistiklerinde isimsiz kalır. Kurucusu olduğun ekiplerde kuruculuk en eski üyeye geçer; tek üyesi olduğun ekipler tamamen silinir. Onaylamak için <b>SİL</b> yaz.</p>
+                    <input class="input mt-12" autoCapitalize="characters" onInput={e => { typed = (e.target as HTMLInputElement).value; }} />
+                    <AsyncButton class="btn btn-danger solid btn-block mt-16" onClick={async () => {
+                        try {
+                            await request('DELETE', '/api/me', { body: { confirm: typed } });
+                            close();
+                            await logout(true);
+                            toast('Hesabın silindi', 'info');
+                            route('/hosgeldin', true);
+                        } catch (e) { toastError(e); }
+                    }}><Trash2 />Hesabımı sil</AsyncButton>
+                </div>
+            )
+        });
     };
     const leaveCrew = async () => {
         if (!m || !me.value) return;
@@ -243,15 +275,7 @@ export function Settings() {
             await mutate('DELETE', `/api/crew/members/${me.value.id}`);
             removeMembership(m.crewId); forgetCrewCache(m.crewId);
             toast('Ekipten ayrıldın', 'info');
-            route(memberships.value.length ? '/' : '/hosgeldin', true);
-        } catch (e) { toastError(e); }
-    };
-    const logoutEverywhere = async () => {
-        if (!(await confirmSheet({ title: 'Diğer tüm cihazlardan çıkılsın mı?', body: 'Bu cihaz bağlı kalır; diğer cihazlarının erişimi kapanır.', confirm: 'Çıkış yap' }))) return;
-        try {
-            const r = await mutate<{ token: string }>('POST', '/api/crew/me/token');
-            if (m) updateMembership(m.crewId, { token: r.token });
-            toast('Diğer cihazların erişimi kapatıldı');
+            route('/', true);
         } catch (e) { toastError(e); }
     };
     const deleteCrew = () => {
@@ -264,10 +288,10 @@ export function Settings() {
                     <input class="input mt-12" onInput={e => { typed = (e.target as HTMLInputElement).value; }} />
                     <AsyncButton class="btn btn-danger solid btn-block mt-16" onClick={async () => {
                         try {
-                            await request('DELETE', '/api/crew', { token: m!.token, body: { confirm: typed } });
+                            await request('DELETE', '/api/crew', { ...crewAuth(m!), body: { confirm: typed } });
                             removeMembership(m!.crewId); forgetCrewCache(m!.crewId);
                             close(); toast('Ekip silindi', 'info');
-                            route(memberships.value.length ? '/' : '/hosgeldin', true);
+                            route('/', true);
                         } catch (e) { toastError(e); }
                     }}><Trash2 />Ekibi sil</AsyncButton>
                 </div>
@@ -282,7 +306,7 @@ export function Settings() {
                 {me.value && (
                     <button class="card card-pad row" style={{ width: '100%', textAlign: 'left' }} onClick={() => openSheet({ title: 'Profilin', render: c => <ProfileSheet close={c} /> })}>
                         <Avatar p={me.value} size="lg" />
-                        <span class="grow"><b style={{ fontSize: '17px' }}>{me.value.name}</b><span class="small muted" style={{ display: 'block' }}>{s?.name} · {owner ? 'Kurucu' : 'Üye'}</span></span>
+                        <span class="grow"><b style={{ fontSize: '17px' }}>{me.value.name}</b><span class="small muted" style={{ display: 'block' }}>Bu ekipteki profilin · {s?.name} · {owner ? 'Kurucu' : 'Üye'}</span></span>
                         <ChevronRight class="faint" />
                     </button>
                 )}
@@ -301,6 +325,13 @@ export function Settings() {
                                 <button class="btn btn-secondary" type="submit" disabled={!crewName.trim() || crewName === s.name}>Kaydet</button>
                             </form>
                         )}
+                        <div class="list mb-12">
+                            <div class="list-item">
+                                <span class="li-icon"><Shield /></span>
+                                <span class="li-body"><span class="li-title">Popüler listelere anonim katkı</span><span class="li-sub" style={{ whiteSpace: 'normal' }}>Ziyaretleriniz Keşfet'teki “çok gidilenler” sayımına isimsiz eklenir. Ekip, kişi ya da puan ayrıntısı paylaşılmaz.{owner ? '' : ' Yalnızca kurucu değiştirebilir.'}</span></span>
+                                <Switch checked={s.shareStats !== false} onChange={v => { if (owner) mutate('PATCH', '/api/crew', { shareStats: v }).then(() => toast(v ? 'Anonim katkı açıldı' : 'Anonim katkı kapatıldı')).catch(toastError); }} label="Popüler listelere anonim katkı" />
+                            </div>
+                        </div>
                         <div class="list">
                             <Row icon={<UserPlus />} title="Davet et" sub="QR kod ya da bağlantı" onClick={openInvite} />
                             {s.members.filter(x => !x.removed).map(x => <MemberRow key={x.id} m={x} />)}
@@ -309,12 +340,13 @@ export function Settings() {
                 )}
 
                 <section class="section">
-                    <div class="section-head"><h2>Bu cihaz</h2></div>
+                    <div class="section-head"><h2>Hesap</h2></div>
                     <div class="list">
-                        {m && <Row icon={<Smartphone />} title="Başka cihazda aç" sub="Tabletin ya da diğer telefonun için QR" onClick={() => openSheet({ title: 'Başka cihazda aç', render: () => <DeviceLink /> })} />}
-                        {m && <Row icon={<RefreshCw />} title="Diğer cihazlardan çıkış yap" sub="Kaybolan bir cihaz varsa" onClick={logoutEverywhere} />}
-                        <Row icon={<Users />} title="Ekip değiştir / ekle" sub={`${memberships.value.length} ekip bu cihazda`} href="/" />
-                        {m && <Row icon={<LogOut />} title="Bu cihazdan çık" onClick={leaveDevice} danger />}
+                        {account && <Row icon={<Users />} title={account.name} sub={[account.email, account.provider === 'google' ? 'Google ile' : null].filter(Boolean).join(' · ')} onClick={() => openSheet({ title: 'Hesap profilin', render: c => <AccountSheet close={c} /> })} />}
+                        {account && account.provider !== 'google' && <Row icon={<KeyRound />} title="Şifre değiştir" onClick={() => openSheet({ title: 'Şifre değiştir', render: c => <PasswordSheet close={c} /> })} />}
+                        <Row icon={<Users />} title="Ekiplerim" sub={`${memberships.value.length} ekip`} onClick={() => route('/', false)} />
+                        <Row icon={<LogOut />} title="Çıkış yap" onClick={signOut} />
+                        <Row icon={<Trash2 />} title="Hesabımı sil" sub="Kalıcı; KVKK kapsamında" onClick={deleteAccount} danger />
                     </div>
                 </section>
 

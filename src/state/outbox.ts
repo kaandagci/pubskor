@@ -5,7 +5,7 @@ import type { CrewSnapshot, VisitInput } from '../../shared/types';
 import { ApiError, request } from '../lib/api';
 import { idb } from '../lib/storage';
 import { applySnapshot, handleAuthError } from './crew';
-import { activeMembership, tokenFor } from './session';
+import { activeMembership, memberships } from './session';
 import { toast } from './ui';
 
 export interface PendingPhoto { id: string; w: number; h: number; type: string; uploaded: boolean }
@@ -104,9 +104,9 @@ async function run() {
     try {
         for (const item of [...outbox.value]) {
             if (item.error) continue;
-            const token = tokenFor(item.crewId);
-            if (!token) continue;
-            const ok = await send(item, token);
+            const m = memberships.value.find(x => x.crewId === item.crewId);
+            if (!m) continue;
+            const ok = await send(item, { crew: m.crewId, token: m.token ?? null });
             if (!ok) break; // ağ sorunu: sırayı koru, sonra tekrar dene
         }
     } finally {
@@ -114,7 +114,7 @@ async function run() {
     }
 }
 
-async function send(item: OutboxItem, token: string): Promise<boolean> {
+async function send(item: OutboxItem, auth: { crew: string; token: string | null }): Promise<boolean> {
     const patch = (p: Partial<OutboxItem>) => {
         outbox.value = outbox.value.map(x => (x.visit.id === item.visit.id ? { ...x, ...p } : x));
         void save();
@@ -125,7 +125,7 @@ async function send(item: OutboxItem, token: string): Promise<boolean> {
             const blob = await idb.get<Blob>('photo:' + ph.id);
             if (!blob) { ph.uploaded = true; continue; } // kopya kaybolmuş: fotoğrafsız devam
             await request('PUT', '/api/photos/' + ph.id, {
-                token, raw: blob, timeout: 60000,
+                ...auth, raw: blob, timeout: 60000,
                 headers: { 'content-type': ph.type, 'x-photo-width': String(ph.w), 'x-photo-height': String(ph.h) }
             });
             ph.uploaded = true;
@@ -135,7 +135,7 @@ async function send(item: OutboxItem, token: string): Promise<boolean> {
         const keep = (item.visit.photos ?? []).filter(p => !item.photos.some(x => x.id === p.id));
         const body = { ...item.visit, photos: [...keep, ...photos] };
         const path = item.method === 'POST' ? '/api/crew/visits' : '/api/crew/visits/' + encodeURIComponent(item.visit.id);
-        const r = await request<{ snapshot: CrewSnapshot }>(item.method, path, { token, body });
+        const r = await request<{ snapshot: CrewSnapshot }>(item.method, path, { ...auth, body });
         outbox.value = outbox.value.filter(x => x.visit.id !== item.visit.id);
         await save();
         await Promise.all(item.photos.map(p => dropPhoto(p.id)));

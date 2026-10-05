@@ -1,4 +1,5 @@
 // Gelen veriyi doğrular ve temizler. Sunucu istemciye güvenmez; istemci de aynı kuralları erken uyarı için kullanır.
+import { isPlaceId } from './places';
 import { isKindId, isMetricId, isVenueKind, isVenueTag, kindsOf, orderMetrics, type KindId, type MetricId, type VenueTag } from './metrics';
 import { analyze, isCell } from './scoring';
 import { ID_RE } from './ids';
@@ -122,6 +123,7 @@ export function validateVenueInput(v: unknown): Result<VenueInput> {
     if (!name) return err('Mekan adı gerekli');
     const lat = num(s.lat, -90, 90), lng = num(s.lng, -180, 180);
     const osm = typeof s.osm === 'string' && /^(node|way|relation)\/\d{1,15}$/.test(s.osm) ? s.osm : null;
+    const placeId = isPlaceId(s.placeId) ? s.placeId : null;
     return ok({
         id: s.id, name,
         kind: isVenueKind(s.kind) ? s.kind : 'diger',
@@ -129,7 +131,8 @@ export function validateVenueInput(v: unknown): Result<VenueInput> {
         address: cleanLine(s.address, LIMITS.address),
         lat: lat != null && lng != null ? Math.round(lat * 1e6) / 1e6 : null,
         lng: lat != null && lng != null ? Math.round(lng * 1e6) / 1e6 : null,
-        osm
+        osm,
+        placeId
     });
 }
 

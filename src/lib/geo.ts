@@ -1,5 +1,7 @@
-// Konum ve mekan arama: yakındaki mekanlar OpenStreetMap/Overpass'tan, adla arama Photon'dan (anahtarsız, ücretsiz).
-// İstekler yalnızca kullanıcı istediğinde atılır.
+// Konum ve mekan arama (İstanbul dışı ya da katalogda olmayan mekanlar için yedek): yakındaki mekanlar
+// OpenStreetMap/Overpass'tan, adla arama Photon'dan (anahtarsız, ücretsiz). İstanbul'da önce kendi kataloğumuz
+// kullanılır (src/lib/places.ts). İstekler yalnızca kullanıcı istediğinde atılır.
+import type { VenueKind } from '../../shared/metrics';
 
 export interface Place {
     name: string;
@@ -8,8 +10,13 @@ export interface Place {
     lat: number;
     lng: number;
     osm: string | null;
+    /** OSM amenity değeri (katalog kayıtlarında boş). */
     kind: string;
     distance?: number;
+    /** Katalog kaydı ise: mekan türü, katalog kimliği ve gösterilecek kategori adı. */
+    venueKind?: VenueKind;
+    placeId?: string | null;
+    label?: string;
 }
 
 export interface LatLng { lat: number; lng: number }
@@ -145,6 +152,3 @@ export async function searchNominatim(q: string, near?: LatLng | null): Promise<
         };
     });
 }
-
-export const directionsUrl = (lat: number, lng: number, name: string) =>
-    `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}&q=${encodeURIComponent(name)}`;

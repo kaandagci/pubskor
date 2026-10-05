@@ -4,10 +4,12 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { tierOf, venueKindLabel } from '../../shared/metrics';
+import { ISTANBUL_CENTER } from '../../shared/istanbul';
 import type { VenueSummary } from '../../shared/insights';
 import { TIER_HEX_DARK } from '../lib/colors';
 import { fmtScore } from '../lib/format';
-import { directionsUrl, getPosition } from '../lib/geo';
+import { getPosition } from '../lib/geo';
+import { mapsDirectionsUrl } from '../../shared/places';
 import { venueSummaries } from '../state/data';
 import { themePref, toastError } from '../state/ui';
 import { Bookmark, LocateFixed, Navigation, X } from '../components/icons';
@@ -44,7 +46,7 @@ export default function MapPage() {
         map.current = m;
         const pts = placed.map(s => L.latLng(s.venue.lat!, s.venue.lng!));
         if (pts.length) m.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 15 });
-        else m.setView([41.015, 28.979], 12);
+        else m.setView([ISTANBUL_CENTER.lat, ISTANBUL_CENTER.lng], 13);
         return () => { m.remove(); map.current = null; };
     }, []);
 
@@ -103,7 +105,7 @@ export default function MapPage() {
                     <div class="row mt-12">
                         {sel.count > 0 && <><b style={{ fontSize: '26px', letterSpacing: '-.03em' }}>{fmtScore(sel.avg)}</b><TierChip score={sel.avg} /></>}
                         <span class="grow" />
-                        <a class="btn btn-sm btn-secondary" href={directionsUrl(sel.venue.lat!, sel.venue.lng!, sel.venue.name)} target="_blank" rel="noopener noreferrer"><Navigation />Yol</a>
+                        <a class="btn btn-sm btn-secondary" href={mapsDirectionsUrl(sel.venue)} target="_blank" rel="noopener noreferrer"><Navigation />Yol</a>
                         <a class="btn btn-sm btn-primary" href={`/mekan/${sel.venue.id}`}>Profil</a>
                     </div>
                 </div>

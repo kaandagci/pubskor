@@ -14,6 +14,11 @@
 | Reklam yönetmeliği (örtülü reklam) | Hazır | Her reklam "Reklam" etiketli, `rel="sponsored"`. Varsayılan olarak kapalı. |
 | Yaş sınırı | Uyumlu | İlk açılışta 18 yaş beyanı. Mağaza dağıtımında 18+ derecelendirme gerekir. |
 | VERBİS | Muhtemelen muaf | Çalışan sayısı 50'den az ve bilanço 100 milyon TL'den küçükse kayıt gerekmiyor. |
+| Hesaplar (v8.1) | Uyum gerekli | E-posta ve şifre Netlify Identity'de (ABD). Kayıtta 18+ ve koşul onayı zaman damgasıyla saklanıyor. Uygulama içinden hesap silme var (App Store da bunu şart koşuyor). |
+| Google Maps verisi | **Kullanılmıyor** | Google'ın koşulları kazımayı ve saklamayı yasaklıyor. Yalnızca anahtarsız "Google Maps'te aç / yol tarifi" bağlantıları var; Google'a veri gitmiyor. |
+| Mekan kataloğu (Overture) | Uyumlu, atıf gerekli | Meta/Microsoft CDLA-Permissive-2.0, Foursquare Apache-2.0, AllThePlaces CC0. Atıf `/yasal` sayfasında ve `data/places/NOTICE.txt` dosyasında. |
+| Anonim popülerlik | Düşük risk | HMAC'lenmiş grup özetleri, en az 3 grup eşiği, 60/90 gün saklama, kurucu kapatabilir. Aydınlatma metninde ayrı bölüm. |
+| Topluluk mekanları | 5651 kapsamında yer sağlayıcılık | Kullanıcılar mekan adı ve konumu ekleyebiliyor. Kişi başı günlük sınır var. Bildirim e-postasından gelen yanıltıcı kayıtlar gizlenmeli (`places/community` belgesinde `hidden: true`). |
 
 ## 1. Alkol reklam ve tanıtım yasağı
 
@@ -43,13 +48,14 @@
 
 **İşlenen veriler:**
 
+- Hesap: e-posta, şifre özeti (Netlify Identity), Google ile girişte ad ve e-posta, onay zaman damgaları
 - Ad veya takma ad
 - Puanlar, notlar, fotoğraflar ve sipariş defteri
-- Mekan konumları
-- Cihazdaki giriş anahtarı
+- Mekan konumları; adla aramada yaklaşık konum (1 km, saklanmıyor)
+- Anonim popülerlik kayıtları (grup özeti + mekan + gün; kişi ya da ekip kimliği yok)
 - Barındırma sağlayıcısının teknik kayıtları (IP adresi)
 
-E-posta, telefon ve şifre toplanmıyor.
+Telefon numarası toplanmıyor.
 
 **Hukuki sebepler:** sözleşmenin kurulması ve ifası (m.5/2-c), meşru menfaat (m.5/2-f), hukuki yükümlülük (m.5/2-ç). Reklam ve analiz için açık rıza (m.5/1).
 
@@ -120,6 +126,9 @@ Ekip içerikleri herkese açık değil; açık olan tek içerik kullanıcının 
 - [ ] Aydınlatma metni ve kullanım koşullarının avukat kontrolü
 - [ ] Kendi alan adı (ör. `.com.tr`) ve iletişim e-postası
 - [ ] Netlify panelinde `ADMIN_KEY` ortam değişkeni (eski arşivi içe aktarırken gerekir)
+- [ ] Netlify panelinde `STATS_SALT` ortam değişkeni (uzun, rastgele; popülerlik özetlerinin tuzu, bir kez belirlenip değiştirilmemeli)
+- [ ] Netlify Identity: Enable, Registration open, Google (varsayılan ayar), e-posta şablonları `/identity/*.html`
+- [ ] Netlify'ın KVKK standart sözleşmesi kapsamına Identity (hesap verisi) de girmeli
 - [ ] Reklam açılacaksa: sağlayıcı seçimi, kategori engelleme, rıza akışının sağlayıcıya bağlanması
 
 ## Kaynaklar

@@ -4,13 +4,14 @@ import { GROUPS, VENUE_KINDS, VENUE_TAGS, tagLabel, venueKindLabel, type VenueKi
 import { analysisOf, rankVenues } from '../../shared/insights';
 import { LIMITS } from '../../shared/validate';
 import { fmtMoney, fmtRelativeDay, fmtScore } from '../lib/format';
-import { directionsUrl, getPosition } from '../lib/geo';
+import { getPosition } from '../lib/geo';
+import { mapsDirectionsUrl } from '../../shared/places';
 import { mutate } from '../state/crew';
 import { summaryById, venueSummaries } from '../state/data';
 import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { MetricBars, TrendChart } from '../components/charts';
-import { BookmarkPlus, Ellipsis, KIND_ICONS, LocateFixed, MapPin, Navigation, Pencil, Plus, Split, ThumbsUp } from '../components/icons';
+import { BookmarkPlus, Ellipsis, Info, KIND_ICONS, LocateFixed, MapPin, Navigation, Pencil, Plus, Split, ThumbsUp } from '../components/icons';
 import { Pint } from '../components/Pint';
 import { AsyncButton, Empty, Field, Stat, TierChip, TopBar } from '../components/ui';
 import { Cover, VisitRow } from '../components/visit';
@@ -127,7 +128,8 @@ export function VenuePage() {
 
                 <div class="row mt-16" style={{ gap: '8px' }}>
                     <a class="btn btn-primary grow" href={`/yeni?mekan=${v.id}`}><Plus />Yeni ziyaret</a>
-                    {v.lat != null && v.lng != null && <a class="btn btn-secondary" href={directionsUrl(v.lat, v.lng!, v.name)} target="_blank" rel="noopener noreferrer"><Navigation />Yol tarifi</a>}
+                    {(v.lat != null || v.address || v.placeId) && <a class="btn btn-secondary" href={mapsDirectionsUrl(v)} target="_blank" rel="noopener noreferrer"><Navigation />Yol tarifi</a>}
+                    {v.placeId && <a class="btn btn-secondary" href={`/yer/${v.placeId}`} aria-label="Mekan bilgisi"><Info /></a>}
                 </div>
 
                 {s.count === 0 ? (

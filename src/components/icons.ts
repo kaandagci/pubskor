@@ -8,7 +8,7 @@ import type { KindId, MetricId } from '../../shared/metrics';
 export {
     ArrowLeft, Award, Beer, Bookmark, BookmarkPlus, Calendar, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheck,
     ClipboardList, Clock, CloudOff, Compass, Copy, Crown, Download, Ellipsis, Eye, EyeOff, FileText, Flame, Gavel, Handshake,
-    History, House, Image, ImagePlus, Info, Link, ListOrdered, LocateFixed, Lock, LogOut, Map, MapPin, Medal, Megaphone,
+    History, House, Image, ImagePlus, Info, KeyRound, Link, ListOrdered, LocateFixed, Lock, LogOut, Map, MapPin, Medal, Megaphone,
     MessageCircle, Monitor, Moon, Navigation, NotebookPen, Pencil, Plus, QrCode, Radio, RefreshCw, Search, Settings, Share2,
     Shield, ShieldCheck, Shuffle, SlidersHorizontal, Smartphone, Sparkles, Split, Star, Sun, Swords, Tag, ThumbsDown, ThumbsUp,
     Timer, Trash2, TrendingDown, TrendingUp, TriangleAlert, Trophy, Undo2, Upload, UserPlus, Users, Wallet, X, Zap

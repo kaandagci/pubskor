@@ -1,6 +1,6 @@
 // Uygulama yapılandırması. Yayına almadan önce LEGAL alanlarını doldurmalısın (bkz. docs/YASAL.md).
 
-export const APP_VERSION = '8.0.0';
+export const APP_VERSION = '8.1.0';
 
 /** Veri sorumlusu ve iletişim bilgileri (KVKK aydınlatma metni ve 5651 kimlik bildirimi için). */
 export const LEGAL = {

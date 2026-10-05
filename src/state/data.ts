@@ -69,7 +69,7 @@ export const venues = computed<Venue[]>(() => {
     for (const item of crewOutbox.value) {
         const vi = item.visit.venue;
         if (vi && !base.some(v => v.id === vi.id) && !extra.some(v => v.id === vi.id)) {
-            extra.push({ id: vi.id, name: vi.name, kind: vi.kind ?? 'diger', area: vi.area ?? '', address: vi.address ?? '', lat: vi.lat ?? null, lng: vi.lng ?? null, osm: vi.osm ?? null, tags: [], wish: null, createdAt: item.queuedAt });
+            extra.push({ id: vi.id, name: vi.name, kind: vi.kind ?? 'diger', area: vi.area ?? '', address: vi.address ?? '', lat: vi.lat ?? null, lng: vi.lng ?? null, osm: vi.osm ?? null, placeId: vi.placeId ?? null, tags: [], wish: null, createdAt: item.queuedAt });
         }
     }
     return extra.length ? [...base, ...extra] : base;

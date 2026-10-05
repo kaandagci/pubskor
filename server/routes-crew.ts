@@ -4,9 +4,11 @@ import { cleanLine, foldKey } from '../shared/text';
 import { LIMITS, validColor, validPersonName } from '../shared/validate';
 import {
     authMember, checkMember, claimGuest, crewKey, freeColor, guestList, loadCrew, memberToken, mutateCrew,
-    parseToken, requireOwner, safeEq, sha, snapshot, type CrewDoc, type Ctx, type MemberRecord
+    memberOfUser, parseToken, requireOwner, requireUser, safeEq, sha, snapshot, stillMember, type CrewDoc, type Ctx, type MemberRecord
 } from './crew';
 import { HttpError, json, readJSON } from './http';
+import { indexCrew, requireProfile, unindexCrew } from './users';
+import { activity } from './routes-visits';
 
 const nameTaken = (crew: CrewDoc, name: string, exceptId?: string) =>
     crew.members.some(m => !m.removed && m.id !== exceptId && m.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'));
@@ -25,18 +27,22 @@ function personName(v: unknown): string {
 
 export async function createCrew(ctx: Ctx, req: Request) {
     const b = await readJSON(req);
+    const user = await requireUser(ctx, req);
+    const profile = await requireProfile(ctx, user);
     const crewName = validCrewName(b.crewName);
-    const name = personName(b.name);
+    const name = b.name !== undefined ? personName(b.name) : profile.name;
     const now = ctx.now();
-    const s = secret();
-    const member: MemberRecord = { id: newId.member(), name, color: validColor(b.color, 0), role: 'owner', joinedAt: now, tokenHash: sha(s) };
+    const member: MemberRecord = {
+        id: newId.member(), name, color: validColor(b.color, profile.color), role: 'owner', joinedAt: now, tokenHash: null, userId: user.id
+    };
     const crew: CrewDoc = {
         v: 1, id: newId.crew(), name: crewName, createdAt: now, updatedAt: now, rev: 1,
         invite: secret(24), members: [member], venues: [], visits: [], tables: []
     };
     const w = await ctx.kv.setJSON(crewKey(crew.id), crew, { onlyIfNew: true });
     if (!w.modified) throw new HttpError(409, 'Tekrar dene');
-    return json({ token: memberToken(crew.id, member.id, s), snapshot: snapshot(crew, member.id, now) }, 201);
+    await indexCrew(ctx, user.id, crew.id, member.id);
+    return json({ snapshot: snapshot(crew, member.id, now) }, 201);
 }
 
 function checkInvite(crew: CrewDoc, invite: unknown) {
@@ -51,8 +57,9 @@ export async function previewCrew(ctx: Ctx, req: Request) {
     if (!entry) throw new HttpError(404, 'Ekip bulunamadı');
     const crew = entry.data;
     checkInvite(crew, b.invite);
-    // Bu cihaz zaten üyeyse doğrudan girebilir
-    const already = checkMember(crew, parseToken(req));
+    // Bu hesap (ya da eski cihaz anahtarı) zaten üyeyse doğrudan girebilir
+    const user = await ctx.identity.user(req);
+    const already = user ? memberOfUser(crew, user.id) : checkMember(crew, parseToken(req));
     return json({
         crewId: crew.id,
         name: crew.name,
@@ -66,22 +73,26 @@ export async function previewCrew(ctx: Ctx, req: Request) {
 export async function joinCrew(ctx: Ctx, req: Request) {
     const b = await readJSON(req);
     if (typeof b.crewId !== 'string') throw new HttpError(400, 'Ekip belirtilmedi');
-    const name = personName(b.name);
+    const user = await requireUser(ctx, req);
+    const profile = await requireProfile(ctx, user);
+    const name = b.name !== undefined && b.name !== '' ? personName(b.name) : profile.name;
     const guestKey = typeof b.guestKey === 'string' ? foldKey(b.guestKey) : '';
-    const s = secret();
     const { crew, result: member } = await mutateCrew(ctx, b.crewId, crew => {
         checkInvite(crew, b.invite);
+        const existing = memberOfUser(crew, user.id);
+        if (existing) return existing; // zaten üye (tekrar deneme)
         if (crew.members.filter(m => !m.removed).length >= LIMITS.members) throw new HttpError(409, 'Ekip dolu');
         if (nameTaken(crew, name)) throw new HttpError(409, `"${name}" adında bir üye zaten var. Başka bir isim seç.`, { code: 'name_taken' });
         const m: MemberRecord = {
             id: newId.member(), name, color: validColor(b.color, freeColor(crew)), role: 'member',
-            joinedAt: ctx.now(), tokenHash: sha(s)
+            joinedAt: ctx.now(), tokenHash: null, userId: user.id
         };
         crew.members.push(m);
         if (guestKey) claimGuest(crew, guestKey, m.id);
         return m;
     });
-    return json({ token: memberToken(crew.id, member.id, s), snapshot: snapshot(crew, member.id, ctx.now()) }, 201);
+    await indexCrew(ctx, user.id, crew.id, member.id);
+    return json({ snapshot: snapshot(crew, member.id, ctx.now()) }, 201);
 }
 
 export async function getCrew(ctx: Ctx, req: Request) {
@@ -93,19 +104,28 @@ export async function getCrew(ctx: Ctx, req: Request) {
 
 /** Üyeyi doğrulayıp ekip belgesini günceller, yeni görüntüyü döner. */
 export async function withCrew<T>(ctx: Ctx, req: Request, fn: (crew: CrewDoc, me: MemberRecord) => T) {
-    const { crew: first, member: me } = await authMember(ctx, req);
-    const { crew, result } = await mutateCrew(ctx, first.id, crew => {
-        const fresh = crew.members.find(m => m.id === me.id && !m.removed);
-        if (!fresh || fresh.tokenHash !== me.tokenHash) throw new HttpError(401, 'Bu cihazın ekip erişimi geçersiz', { code: 'token_invalid' });
-        return fn(crew, fresh);
-    });
-    return { crew, me, result, snap: () => snapshot(crew, me.id, ctx.now()) };
+    const auth = await authMember(ctx, req);
+    const me = auth.member;
+    const { crew, result } = await mutateCrew(ctx, auth.crew.id, crew => fn(crew, stillMember(crew, auth)));
+    return { crew, me, auth, result, snap: () => snapshot(crew, me.id, ctx.now()) };
 }
 
 export async function updateCrew(ctx: Ctx, req: Request) {
     const b = await readJSON(req);
-    const name = validCrewName(b.name);
-    const r = await withCrew(ctx, req, (crew, me) => { requireOwner(me); crew.name = name; });
+    const name = b.name !== undefined ? validCrewName(b.name) : null;
+    const share = typeof b.shareStats === 'boolean' ? b.shareStats : null;
+    const r = await withCrew(ctx, req, (crew, me) => {
+        requireOwner(me);
+        if (name) crew.name = name;
+        const changed = share !== null && (crew.shareStats !== false) !== share;
+        if (share !== null) crew.shareStats = share;
+        return changed;
+    });
+    // Katkı açılıp kapanınca son 60 günün anonim kayıtlarını ekiple eşitle
+    if (r.result) {
+        const pairs = new Set(r.crew.visits.filter(v => !v.deletedAt).map(v => `${v.venueId}|${v.date}`));
+        for (const pair of pairs) { const [venueId, date] = pair.split('|'); await activity(ctx, r.crew, venueId, date); }
+    }
     return json({ snapshot: r.snap() });
 }
 
@@ -152,15 +172,17 @@ export async function removeMember(ctx: Ctx, req: Request, p: Record<string, str
         if (!self) requireOwner(me);
         const m = crew.members.find(x => x.id === p.mid && !x.removed);
         if (!m) throw new HttpError(404, 'Üye bulunamadı');
-        m.removed = true; m.tokenHash = null;
+        const userId = m.userId ?? null;
+        m.removed = true; m.tokenHash = null; m.userId = null;
         if (m.role === 'owner') {
             m.role = 'member';
             const heir = crew.members.filter(x => !x.removed).sort((a, b) => a.joinedAt - b.joinedAt)[0];
             if (heir) heir.role = 'owner';
         }
-        return self;
+        return { self, userId };
     });
-    return json(r.result ? { left: true } : { snapshot: r.snap() });
+    if (r.result.userId) await unindexCrew(ctx, r.result.userId, r.crew.id);
+    return json(r.result.self ? { left: true } : { snapshot: r.snap() });
 }
 
 export async function makeOwner(ctx: Ctx, req: Request, p: Record<string, string>) {
@@ -194,9 +216,18 @@ export async function deleteCrew(ctx: Ctx, req: Request) {
     if (typeof b.confirm !== 'string' || b.confirm.trim().toLocaleLowerCase('tr') !== crew.name.toLocaleLowerCase('tr')) {
         throw new HttpError(400, 'Onay için ekip adını aynen yaz');
     }
+    await purgeCrew(ctx, crew);
+    return json({ deleted: true });
+}
+
+/** Ekibi, fotoğraflarını, paylaşım bağlantılarını ve üyelerin ekip dizinlerini siler. */
+export async function purgeCrew(ctx: Ctx, crew: CrewDoc) {
     const photoIds = crew.visits.flatMap(v => v.photos.map(p => p.id)).filter(id => id.startsWith('ph_'));
     const shareIds = crew.visits.map(v => v.shareId).filter((s): s is string => !!s);
     await ctx.kv.delete(crewKey(crew.id));
-    await Promise.allSettled([...photoIds.map(id => ctx.kv.delete('photo/' + id)), ...shareIds.map(id => ctx.kv.delete('share/' + id))]);
-    return json({ deleted: true });
+    await Promise.allSettled([
+        ...photoIds.map(id => ctx.kv.delete('photo/' + id)),
+        ...shareIds.map(id => ctx.kv.delete('share/' + id)),
+        ...crew.members.filter(m => m.userId).map(m => unindexCrew(ctx, m.userId!, crew.id))
+    ]);
 }

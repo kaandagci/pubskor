@@ -2,6 +2,9 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import preact from '@preact/preset-vite';
+import { geohash } from './shared/geohash';
+
+interface CatalogFile { release: string; count: number; rows: [string, string, string, number, number, ...unknown[]][] }
 
 /**
  * Yerel geliştirmede /api/* isteklerini Netlify fonksiyonuyla aynı uygulamaya yönlendirir.
@@ -10,6 +13,9 @@ import preact from '@preact/preset-vite';
  */
 function devApi(): Plugin {
     let kv: unknown = null;
+    let catalog: unknown = null;
+    let devIdentity: unknown = null;
+    let placeIndex: Map<string, unknown> | null = null;
     return {
         name: 'pubskor-dev-api',
         apply: 'serve',
@@ -17,31 +23,47 @@ function devApi(): Plugin {
             server.middlewares.use(async (req, res, next) => {
                 if (!req.url?.startsWith('/api/')) return next();
                 try {
-                    const { createApp } = await server.ssrLoadModule('/server/app.ts');
                     if (!kv) {
                         const { fileKV } = await server.ssrLoadModule('/server/kv-file.ts');
                         kv = fileKV('.data/pubskor');
                     }
-                    const legacyDir = '.data/legacy';
-                    const legacy = {
-                        visits: {
-                            list: async () => (await readdir(legacyDir).catch(() => [] as string[])).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5)),
-                            getJSON: async (k: string) => JSON.parse(await readFile(join(legacyDir, k + '.json'), 'utf8'))
-                        },
-                        photos: {
-                            getBinary: async (k: string) => {
-                                const b = await readFile(join(legacyDir, k + '.jpg')).catch(() => null);
-                                return b ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : null;
+                    let app: (r: Request) => Promise<Response>;
+                    if (req.url.startsWith('/api/places/')) {
+                        catalog ??= JSON.parse(await readFile('data/places/ist.json', 'utf8'));
+                        const { createPlacesApp } = await server.ssrLoadModule('/server/places-app.ts');
+                        const { communityLoader } = await server.ssrLoadModule('/server/community.ts');
+                        devIdentity ??= (await server.ssrLoadModule('/server/identity.ts')).devIdentity();
+                        app = createPlacesApp(catalog, { community: communityLoader(kv, 0), kv, identity: devIdentity });
+                    } else {
+                        const { createApp } = await server.ssrLoadModule('/server/app.ts');
+                        const legacyDir = '.data/legacy';
+                        const legacy = {
+                            visits: {
+                                list: async () => (await readdir(legacyDir).catch(() => [] as string[])).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5)),
+                                getJSON: async (k: string) => JSON.parse(await readFile(join(legacyDir, k + '.json'), 'utf8'))
+                            },
+                            photos: {
+                                getBinary: async (k: string) => {
+                                    const b = await readFile(join(legacyDir, k + '.jpg')).catch(() => null);
+                                    return b ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : null;
+                                }
                             }
-                        }
-                    };
-                    const app = createApp({ kv, legacy, adminKey: process.env.ADMIN_KEY || '' });
+                        };
+                        devIdentity ??= (await server.ssrLoadModule('/server/identity.ts')).devIdentity();
+                        catalog ??= JSON.parse(await readFile('data/places/ist.json', 'utf8'));
+                        const cat = catalog as { rows: [string, string, string, number, number, string][] };
+                        const byId = (placeIndex ??= new Map(cat.rows.map(r => [r[0], { id: r[0], name: r[1], kind: r[2], lat: r[3], lng: r[4], district: r[5] }])));
+                        const { communityLoader } = await server.ssrLoadModule('/server/community.ts');
+                        const community = await communityLoader(kv, 0)() as { id: string }[];
+                        const placeLookup = (id: string) => byId.get(id) ?? community.find(p => p.id === id);
+                        app = createApp({ kv, legacy, identity: devIdentity, dev: true, placeLookup, adminKey: process.env.ADMIN_KEY || '' });
+                    }
                     const chunks: Buffer[] = [];
                     for await (const c of req) chunks.push(c as Buffer);
                     const headers = new Headers();
                     for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers.set(k, v);
                     const hasBody = req.method !== 'GET' && req.method !== 'HEAD' && chunks.length > 0;
-                    const response: Response = await app(new Request('http://localhost' + req.url, {
+                    const response = await app(new Request(`http://${req.headers.host ?? 'localhost'}${req.url}`, {
                         method: req.method, headers, body: hasBody ? Buffer.concat(chunks) : undefined
                     }));
                     res.statusCode = response.status;
@@ -55,6 +77,48 @@ function devApi(): Plugin {
     };
 }
 
+/**
+ * Mekan kataloğunu geohash6 karolarına böler: /places/ist/<karo>.json (statik, CDN'den gelir, çevrimdışı önbelleğe alınır).
+ * Geliştirmede aynı dosyalar bellekten sunulur.
+ */
+function placeTiles(): Plugin {
+    const build = async () => {
+        const catalog = JSON.parse(await readFile('data/places/ist.json', 'utf8')) as CatalogFile;
+        const tiles = new Map<string, CatalogFile['rows']>();
+        for (const r of catalog.rows) {
+            const g = geohash(r[3], r[4]);
+            let list = tiles.get(g);
+            if (!list) tiles.set(g, (list = []));
+            list.push(r);
+        }
+        return { catalog, tiles };
+    };
+    let cached: Awaited<ReturnType<typeof build>> | null = null;
+    return {
+        name: 'pubskor-place-tiles',
+        configureServer(server: ViteDevServer) {
+            server.middlewares.use(async (req, res, next) => {
+                const m = /^\/places\/ist\/(\w+)\.json$/.exec(req.url ?? '');
+                if (!m) return next();
+                cached ??= await build();
+                const rows = m[1] === 'meta' ? null : cached.tiles.get(m[1]);
+                res.setHeader('content-type', 'application/json');
+                if (m[1] === 'meta') { res.end(JSON.stringify({ release: cached.catalog.release, count: cached.catalog.count })); return; }
+                if (!rows) { res.statusCode = 404; res.end('{}'); return; }
+                res.end(JSON.stringify({ v: 1, rows }));
+            });
+        },
+        async generateBundle() {
+            const { catalog, tiles } = await build();
+            for (const [g, rows] of tiles) {
+                this.emitFile({ type: 'asset', fileName: `places/ist/${g}.json`, source: JSON.stringify({ v: 1, rows }) });
+            }
+            this.emitFile({ type: 'asset', fileName: 'places/empty.json', source: '{"v":1,"rows":[]}' });
+            this.emitFile({ type: 'asset', fileName: 'places/ist/meta.json', source: JSON.stringify({ release: catalog.release, count: catalog.count, tiles: tiles.size }) });
+        }
+    };
+}
+
 /** Service worker'a önbelleğe alınacak derleme çıktılarının listesini yazar. */
 function swManifest(): Plugin {
     return {
@@ -62,7 +126,7 @@ function swManifest(): Plugin {
         apply: 'build',
         generateBundle(_opts, bundle) {
             const files = Object.keys(bundle).filter(f =>
-                f !== 'sw.js' && !f.endsWith('.map') && !/pdf|jspdf|html2canvas|purify|leaflet|index\.es|vietnamese|cyrillic/i.test(f)
+                f !== 'sw.js' && !f.endsWith('.map') && !/^places\//.test(f) && !/pdf|jspdf|html2canvas|purify|leaflet|index\.es|vietnamese|cyrillic/i.test(f)
             );
             const version = Date.now().toString(36);
             for (const chunk of Object.values(bundle)) {
@@ -77,7 +141,7 @@ function swManifest(): Plugin {
 }
 
 export default defineConfig({
-    plugins: [preact(), devApi(), swManifest()],
+    plugins: [preact(), devApi(), placeTiles(), swManifest()],
     server: { port: 5173, host: true },
     preview: { port: 4173 },
     build: {

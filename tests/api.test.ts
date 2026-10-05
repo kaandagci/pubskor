@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../server/app';
+import { devIdentity } from '../server/identity';
 import { memoryKV, type LegacyStores } from '../server/kv';
 import { LEGACY_METRICS, metricsFor } from '../shared/metrics';
 import type { CrewSnapshot, Sheet, TableView } from '../shared/types';
@@ -11,9 +12,16 @@ let app: ReturnType<typeof createApp>;
 let kv: ReturnType<typeof memoryKV>;
 let clock = 1_800_000_000_000;
 
+let identity = devIdentity('test-secret');
+
+/** token: hesap anahtarı ("dev.…"), "anahtar#ekipKimliği" (ekip isteği) ya da eski m1./t1. anahtar. */
 async function call(method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string>; raw?: BodyInit } = {}) {
     const headers: Record<string, string> = { ...opts.headers };
-    if (opts.token) headers.authorization = 'Bearer ' + opts.token;
+    if (opts.token) {
+        const [tok, crewId] = opts.token.split('#');
+        headers.authorization = 'Bearer ' + tok;
+        if (crewId) headers['x-crew-id'] = crewId;
+    }
     if (opts.body !== undefined) headers['content-type'] = 'application/json';
     const res = await app(new Request('http://x' + path, { method, headers, body: opts.raw ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined) }));
     const text = await res.text();
@@ -28,13 +36,23 @@ const legacy: LegacyStores = {
     photos: { getBinary: async k => (k === 'pub_1696000000001' ? new Uint8Array([0xff, 0xd8, 0xff, 1]).buffer : null) }
 };
 
+/** Hesap açar ve profili tamamlar; hesap anahtarını döner. */
+async function login(email: string, name: string) {
+    const jwt = identity.devLogin!(email, name);
+    const r = await call('POST', '/api/me', { token: jwt, body: { name, adult: true, terms: true } });
+    expect(r.status).toBe(200);
+    return jwt;
+}
+
 async function setupCrew() {
-    const a = await call('POST', '/api/auth/crew', { body: { crewName: 'Cuma Ekibi', name: 'Kaan' } });
+    const ja = await login('kaan@example.com', 'Kaan');
+    const a = await call('POST', '/api/auth/crew', { token: ja, body: { crewName: 'Cuma Ekibi', name: 'Kaan' } });
     expect(a.status).toBe(201);
     const snapA: CrewSnapshot = a.data.snapshot;
-    const b = await call('POST', '/api/auth/join', { body: { crewId: snapA.id, invite: snapA.invite, name: 'Suude' } });
+    const jb = await login('suude@example.com', 'Suude');
+    const b = await call('POST', '/api/auth/join', { token: jb, body: { crewId: snapA.id, invite: snapA.invite, name: 'Suude' } });
     expect(b.status).toBe(201);
-    return { tokA: a.data.token as string, tokB: b.data.token as string, crew: b.data.snapshot as CrewSnapshot };
+    return { tokA: `${ja}#${snapA.id}`, tokB: `${jb}#${snapA.id}`, crew: b.data.snapshot as CrewSnapshot, ja, jb };
 }
 
 const visitBody = (id: string, crew: CrewSnapshot, score = 7) => ({
@@ -46,25 +64,83 @@ const visitBody = (id: string, crew: CrewSnapshot, score = 7) => ({
 
 beforeEach(() => {
     kv = memoryKV();
+    identity = devIdentity('test-secret');
     clock = 1_800_000_000_000;
-    app = createApp({ kv, legacy, now: () => clock });
+    app = createApp({ kv, legacy, identity, dev: true, now: () => clock });
 });
 
 describe('ekip ve davet', () => {
     it('kurar, önizler, katılır; yanlış davet reddedilir', async () => {
-        const a = await call('POST', '/api/auth/crew', { body: { crewName: 'Ekip', name: 'Kaan' } });
+        expect((await call('POST', '/api/auth/crew', { body: { crewName: 'Ekip', name: 'Kaan' } })).status).toBe(401);
+        const ja = await login('kaan@example.com', 'Kaan');
+        const a = await call('POST', '/api/auth/crew', { token: ja, body: { crewName: 'Ekip', name: 'Kaan' } });
         const snap: CrewSnapshot = a.data.snapshot;
         expect(snap.members[0].role).toBe('owner');
         expect(JSON.stringify(snap)).not.toContain('tokenHash');
+        expect(JSON.stringify(snap)).not.toContain('userId');
 
-        const bad = await call('POST', '/api/auth/join', { body: { crewId: snap.id, invite: 'yanlis-davet-kodu-xxxxxxxx', name: 'X' } });
+        const jx = await login('x@example.com', 'X');
+        const bad = await call('POST', '/api/auth/join', { token: jx, body: { crewId: snap.id, invite: 'yanlis-davet-kodu-xxxxxxxx', name: 'X' } });
         expect(bad.status).toBe(403);
 
         const pv = await call('POST', '/api/auth/preview', { body: { crewId: snap.id, invite: snap.invite } });
         expect(pv.data.name).toBe('Ekip');
+        expect(pv.data.alreadyMember).toBeNull();
+        expect((await call('POST', '/api/auth/preview', { token: ja, body: { crewId: snap.id, invite: snap.invite } })).data.alreadyMember).toBe(snap.me);
 
-        const dup = await call('POST', '/api/auth/join', { body: { crewId: snap.id, invite: snap.invite, name: 'kaan' } });
+        const dup = await call('POST', '/api/auth/join', { token: jx, body: { crewId: snap.id, invite: snap.invite, name: 'kaan' } });
         expect(dup.status).toBe(409);
+
+        // Hesabın ekipleri
+        const me = await call('GET', '/api/me', { token: ja });
+        expect(me.data.crews).toEqual([{ crewId: snap.id, crewName: 'Ekip', memberId: snap.me, role: 'owner' }]);
+    });
+
+    it('profil olmadan ekip kurulamaz, başka siteden gelen istek reddedilir', async () => {
+        const jwt = identity.devLogin!('yeni@example.com', 'Yeni');
+        expect((await call('GET', '/api/me', { token: jwt })).data.code).toBe('no_profile');
+        expect((await call('POST', '/api/auth/crew', { token: jwt, body: { crewName: 'E' } })).data.code).toBe('no_profile');
+        expect((await call('POST', '/api/me', { token: jwt, body: { name: 'Yeni' } })).status).toBe(400);
+        await login('yeni@example.com', 'Yeni');
+        const csrf = await call('POST', '/api/auth/crew', { token: jwt, body: { crewName: 'E' }, headers: { origin: 'https://kotu.example' } });
+        expect(csrf.status).toBe(403);
+        expect((await call('POST', '/api/dev/login', { body: { email: 'a@b.co' } })).data.token).toMatch(/^dev\./);
+    });
+
+    it('eski cihaz anahtarını hesaba bağlar, anahtar geçersizleşir', async () => {
+        const { crew, ja } = await setupCrew();
+        // Eski sürümden kalan üyeyi taklit et: hesapsız, cihaz anahtarlı
+        const doc = (await kv.getJSON<any>('crew/' + crew.id))!.data;
+        const { sha } = await import('../server/crew');
+        doc.members.push({ id: 'm_legacy0001', name: 'Mert', color: 3, role: 'member', joinedAt: 1, tokenHash: sha('s'.repeat(32)), userId: null });
+        await kv.setJSON('crew/' + crew.id, doc);
+        const legacyTok = `m1.${crew.id}.m_legacy0001.${'s'.repeat(32)}`;
+        expect((await call('GET', '/api/crew', { token: legacyTok })).status).toBe(200);
+
+        const jm = await login('mert@example.com', 'Mert');
+        const at = await call('POST', '/api/me/attach', { token: jm, body: { tokens: [legacyTok, 'm1.c_yokyokyokyokyo.m_x.yyyyyyyyyyyyyyyyyyyyyyyy'] } });
+        expect(at.data.results.map((r: any) => r.status)).toEqual(['ok', 'invalid']);
+        expect((await call('GET', '/api/crew', { token: legacyTok })).status).toBe(401);
+        expect((await call('GET', '/api/crew', { token: `${jm}#${crew.id}` })).data.me).toBe('m_legacy0001');
+        // Başka hesap aynı üyeyi alamaz
+        const again = await call('POST', '/api/me/attach', { token: ja, body: { tokens: [legacyTok] } });
+        expect(again.data.results[0].status).toBe('invalid');
+    });
+
+    it('hesap silinince ekipte anonimleşir, kurucluk devredilir', async () => {
+        const { tokA, ja, jb, crew } = await setupCrew();
+        await call('POST', '/api/crew/visits', { token: tokA, body: visitBody('pub_aaaaaaaaaaaa', crew) });
+        expect((await call('DELETE', '/api/me', { token: ja, body: { confirm: 'evet' } })).status).toBe(400);
+        const d = await call('DELETE', '/api/me', { token: ja, body: { confirm: 'sil' } });
+        expect(d.data.deleted).toBe(true);
+        expect((await call('GET', '/api/me', { token: ja })).status).toBe(401);
+        const g = await call('GET', '/api/crew', { token: `${jb}#${crew.id}` });
+        expect(g.data.members.find((m: any) => m.removed).name).toBe('Silinmiş üye');
+        expect(g.data.members.find((m: any) => !m.removed).role).toBe('owner');
+        expect(JSON.stringify(g.data.visits)).not.toContain('Kaan');
+        // Son üye de silinirse ekip tamamen silinir
+        await call('DELETE', '/api/me', { token: jb, body: { confirm: 'SİL' } });
+        expect(await kv.getJSON('crew/' + crew.id)).toBeNull();
     });
 
     it('geçersiz jetonu ve çıkarılan üyeyi reddeder', async () => {
@@ -303,7 +379,8 @@ describe('v7 içe aktarma', () => {
         expect(photo.status).toBe(200);
 
         // Ayşe ekibe katılırken geçmiş katılımlarını sahiplenir
-        const join = await call('POST', '/api/auth/join', { body: { crewId: snap.id, invite: snap.invite, name: 'Ayşe', guestKey: 'ayse' } });
+        const jAyse = await login('ayse@example.com', 'Ayşe');
+        const join = await call('POST', '/api/auth/join', { token: jAyse, body: { crewId: snap.id, invite: snap.invite, name: 'Ayşe', guestKey: 'ayse' } });
         const me = join.data.snapshot.me;
         expect(join.data.snapshot.visits.every((x: any) => x.participants[1].memberId === me)).toBe(true);
     });

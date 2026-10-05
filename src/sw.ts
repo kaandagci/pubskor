@@ -7,6 +7,7 @@ const VERSION = '__SW_VERSION__';
 const SHELL = `shell-${VERSION}`;
 const PHOTOS = 'photos-v1';
 const TILES = 'tiles-v1';
+const PLACES = 'places-v1';
 const PRECACHE: string[] = '__PRECACHE_MANIFEST__' as unknown as string[];
 
 sw.addEventListener('install', (event: ExtendableEvent) => {
@@ -15,7 +16,7 @@ sw.addEventListener('install', (event: ExtendableEvent) => {
 
 sw.addEventListener('activate', (event: ExtendableEvent) => {
     event.waitUntil((async () => {
-        const keep = new Set([SHELL, PHOTOS, TILES]);
+        const keep = new Set([SHELL, PHOTOS, TILES, PLACES]);
         for (const k of await caches.keys()) if (!keep.has(k)) await caches.delete(k);
         await sw.clients.claim();
     })());
@@ -70,8 +71,11 @@ sw.addEventListener('fetch', (event: FetchEvent) => {
     }
 
     if (url.origin === sw.location.origin) {
+        if (url.pathname.startsWith('/.netlify/')) return; // hesap (Identity) istekleri asla önbelleğe alınmaz
         if (url.pathname.startsWith('/api/photos/')) { event.respondWith(cacheFirst(req, PHOTOS, 300)); return; }
         if (url.pathname.startsWith('/api/')) return; // veri: uygulama yönetir
+        // Mekan kataloğu karoları: önce önbellek, arkada tazele (gezilen semtler çevrimdışı da açılır)
+        if (url.pathname.startsWith('/places/')) { event.respondWith(staleWhileRevalidate(req, PLACES, 400)); return; }
         if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/')) {
             event.respondWith(caches.match(req).then(hit => hit ?? cacheFirst(req, SHELL, 500)));
         }

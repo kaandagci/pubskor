@@ -27,6 +27,8 @@ export interface Venue {
     lng?: number | null;
     /** OpenStreetMap kaynağı (ör. "node/123"), yinelenen mekanları önlemek için. */
     osm?: string | null;
+    /** Pub Skor mekan kataloğundaki karşılığı (pl_… ya da topluluk mekanı pc_…). */
+    placeId?: string | null;
     /** Mekan özellikleri (canlı müzik, teras…), ekip ortak düzenler. */
     tags: VenueTag[];
     /** "Gidilecekler" listesinde mi? */
@@ -105,6 +107,8 @@ export interface CrewSnapshot {
     visits: Visit[];
     tables: TableRef[];
     legacyImported?: boolean;
+    /** Ekip anonim popülerlik istatistiğine katkı veriyor mu. */
+    shareStats?: boolean;
 }
 
 export interface VenueInput {
@@ -116,6 +120,7 @@ export interface VenueInput {
     lat?: number | null;
     lng?: number | null;
     osm?: string | null;
+    placeId?: string | null;
 }
 
 export interface VisitInput {

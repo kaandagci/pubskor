@@ -3,12 +3,17 @@
 // Her yazım ETag ile koşulludur; çakışmada belge yeniden okunup işlem tekrar uygulanır.
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { CrewSnapshot, Member, TableRef, Venue, Visit } from '../shared/types';
+import type { CatalogPlace } from '../shared/places';
 import { foldKey } from '../shared/text';
 import { HttpError, sleep } from './http';
+import type { Identity, IdentityUser } from './identity';
 import type { JsonEntry, KV, LegacyStores } from './kv';
 
 export interface MemberRecord extends Member {
+    /** Eski cihaz anahtarının özeti (hesaba bağlanınca silinir). */
     tokenHash: string | null;
+    /** Bağlı hesap (Netlify Identity kullanıcı kimliği). */
+    userId?: string | null;
 }
 
 export interface CrewDoc {
@@ -24,12 +29,21 @@ export interface CrewDoc {
     visits: Visit[];
     tables: TableRef[];
     legacyImported?: boolean;
+    /** Anonim popülerlik istatistiğine katkı (varsayılan açık; kurucu kapatabilir). */
+    shareStats?: boolean;
 }
 
 export interface Ctx {
     kv: KV;
     legacy: LegacyStores | null;
     adminKey: string;
+    identity: Identity;
+    /** Popülerlik istatistiğinde grup kimliklerini anonimleştiren gizli tuz. */
+    statsSalt: string;
+    /** Yerel geliştirme / test (geliştirici giriş ucu açık). */
+    dev: boolean;
+    /** Yalnızca geliştirmede: popüler listeyi istek anında hesaplamak için mekan bilgisi. */
+    placeLookup?: (id: string) => CatalogPlace | null | undefined;
     now: () => number;
 }
 
@@ -85,17 +99,68 @@ export interface Authed {
     crew: CrewDoc;
     entry: JsonEntry<CrewDoc>;
     member: MemberRecord;
+    /** Hesapla mı (çerez değil, Identity anahtarı) yoksa eski cihaz anahtarıyla mı geldi. */
+    via: 'user' | 'token';
+    user: IdentityUser | null;
 }
 
-/** İsteği yapan üyeyi doğrular. Ekip yoksa ya da jeton geçersizse 401. */
-export async function authMember(ctx: Ctx, req: Request): Promise<Authed> {
+/**
+ * Tarayıcıdan gelen değiştirici isteklerin bu siteden geldiğini doğrular (CSRF). Kimlik başlıkla
+ * taşındığı için asıl koruma o; bu ek bir katman. Tarayıcı dışı istemcilerde başlıklar yoksa geçer.
+ */
+export function checkOrigin(req: Request) {
+    if (req.method === 'GET' || req.method === 'HEAD') return;
+    const site = req.headers.get('sec-fetch-site');
+    if (site && site !== 'same-origin' && site !== 'none') throw new HttpError(403, 'İstek bu siteden gelmedi', { code: 'bad_origin' });
+    const origin = req.headers.get('origin');
+    if (!origin) return;
+    let host = '';
+    try { host = new URL(origin).host; } catch { /* geçersiz */ }
+    const own = [new URL(req.url).host, req.headers.get('x-forwarded-host'), req.headers.get('host')].filter(Boolean);
+    if (!own.includes(host)) throw new HttpError(403, 'İstek bu siteden gelmedi', { code: 'bad_origin' });
+}
+
+/** Giriş yapmış hesabı döndürür; yoksa 401. */
+export async function requireUser(ctx: Ctx, req: Request): Promise<IdentityUser> {
+    const user = await ctx.identity.user(req);
+    if (!user) throw new HttpError(401, 'Önce giriş yap', { code: 'login_required' });
+    checkOrigin(req);
+    return user;
+}
+
+export const crewIdOf = (req: Request) => req.headers.get('x-crew-id') || '';
+
+/**
+ * İsteği yapan üyeyi doğrular: hesapla (Identity anahtarı + X-Crew-Id) ya da geçiş dönemi için eski
+ * cihaz anahtarıyla (m1.…). Ekip yoksa ya da üyelik geçersizse 401/403.
+ */
+export async function authMember(ctx: Ctx, req: Request, crewId?: string): Promise<Authed> {
     const token = parseToken(req);
-    if (!token || token.kind !== 'member') throw new HttpError(401, 'Giriş gerekli');
-    const entry = await loadCrew(ctx, token.crewId);
+    if (token?.kind === 'member') {
+        const entry = await loadCrew(ctx, token.crewId);
+        if (!entry) throw new HttpError(401, 'Ekip bulunamadı', { code: 'crew_gone' });
+        const member = checkMember(entry.data, token);
+        if (!member) throw new HttpError(401, 'Bu cihazın ekip erişimi geçersiz', { code: 'token_invalid' });
+        return { crew: entry.data, entry, member, via: 'token', user: null };
+    }
+    const user = await requireUser(ctx, req);
+    const id = crewId ?? crewIdOf(req);
+    if (!id) throw new HttpError(400, 'Ekip belirtilmedi');
+    const entry = await loadCrew(ctx, id);
     if (!entry) throw new HttpError(401, 'Ekip bulunamadı', { code: 'crew_gone' });
-    const member = checkMember(entry.data, token);
-    if (!member) throw new HttpError(401, 'Bu cihazın ekip erişimi geçersiz', { code: 'token_invalid' });
-    return { crew: entry.data, entry, member };
+    const member = memberOfUser(entry.data, user.id);
+    if (!member) throw new HttpError(401, 'Bu ekibin üyesi değilsin', { code: 'not_member' });
+    return { crew: entry.data, entry, member, via: 'user', user };
+}
+
+export const memberOfUser = (crew: CrewDoc, userId: string) => crew.members.find(m => m.userId === userId && !m.removed) ?? null;
+
+/** Güncelleme sırasında üyeliğin hâlâ geçerli olduğunu doğrular (taze belgeyle). */
+export function stillMember(crew: CrewDoc, a: Pick<Authed, 'member' | 'via' | 'user'>): MemberRecord {
+    const fresh = crew.members.find(m => m.id === a.member.id && !m.removed);
+    const ok = fresh && (a.via === 'user' ? fresh.userId === a.user!.id : fresh.tokenHash === a.member.tokenHash);
+    if (!ok) throw new HttpError(401, 'Bu ekibe erişimin sona erdi', { code: a.via === 'user' ? 'not_member' : 'token_invalid' });
+    return fresh;
 }
 
 /**
@@ -132,11 +197,12 @@ export function snapshot(crew: CrewDoc, meId: string, now: number): CrewSnapshot
         rev: crew.rev,
         invite: crew.invite,
         me: meId,
-        members: crew.members.map(({ tokenHash, ...m }) => m),
+        members: crew.members.map(({ tokenHash, userId, ...m }) => m),
         venues: crew.venues,
         visits: crew.visits,
         tables: crew.tables.filter(t => t.expiresAt > now),
-        legacyImported: !!crew.legacyImported
+        legacyImported: !!crew.legacyImported,
+        shareStats: crew.shareStats !== false
     };
 }
 

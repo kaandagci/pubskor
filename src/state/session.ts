@@ -1,4 +1,5 @@
-// Bu cihazdaki ekip üyelikleri (her biri bir giriş jetonu) ve canlı masa koltuk jetonları.
+// Hesabın ekip üyelikleri (sunucudaki /api/me listesinin cihazdaki kopyası; çevrimdışı açılış için) ve canlı
+// masa koltuk jetonları. Eski sürümden kalan, henüz hesaba bağlanmamış üyeliklerde cihaz anahtarı (token) olur.
 import { computed, signal } from '@preact/signals';
 import { local } from '../lib/storage';
 
@@ -6,11 +7,13 @@ export interface Membership {
     crewId: string;
     crewName: string;
     memberId: string;
-    token: string;
+    /** Yalnızca eski sürümden kalan, hesaba bağlanmamış üyelik. */
+    token?: string;
+    role?: 'owner' | 'member';
     addedAt: number;
 }
 
-export const memberships = signal<Membership[]>(local.get<Membership[]>('memberships', []).filter(m => m && m.crewId && m.token));
+export const memberships = signal<Membership[]>(local.get<Membership[]>('memberships', []).filter(m => m && m.crewId));
 export const activeCrewId = signal<string | null>(local.get<string | null>('active', null));
 if (!memberships.value.some(m => m.crewId === activeCrewId.value)) activeCrewId.value = memberships.value[0]?.crewId ?? null;
 
@@ -50,7 +53,28 @@ export function setActiveCrew(crewId: string) {
     persist();
 }
 
-export const tokenFor = (crewId: string) => memberships.value.find(m => m.crewId === crewId)?.token ?? null;
+/** Ekip isteği seçenekleri: hesapla (X-Crew-Id) ya da eski cihaz anahtarıyla. */
+export const crewAuth = (m: Membership) => ({ crew: m.crewId, token: m.token ?? null });
+
+/** Eski sürümden kalan, hesaba bağlanmamış üyelikler. */
+export const legacyMemberships = () => memberships.value.filter(m => !!m.token);
+
+/** Sunucudaki hesap üyelikleriyle cihazdaki listeyi eşitler (bağlanmamış eski üyelikler korunur). */
+export function setAccountMemberships(list: { crewId: string; crewName: string; memberId: string; role: 'owner' | 'member' }[]) {
+    const prev = new Map(memberships.value.map(m => [m.crewId, m]));
+    const next: Membership[] = list.map(c => ({ ...c, addedAt: prev.get(c.crewId)?.addedAt ?? Date.now() }));
+    for (const m of memberships.value) if (m.token && !next.some(x => x.crewId === m.crewId)) next.push(m);
+    memberships.value = next;
+    if (!next.some(m => m.crewId === activeCrewId.value)) activeCrewId.value = next[0]?.crewId ?? null;
+    persist();
+}
+
+/** Çıkışta cihazdaki hesap üyeliklerini unutur. */
+export function clearMemberships() {
+    memberships.value = [];
+    activeCrewId.value = null;
+    persist();
+}
 
 // ----- Canlı masa koltukları (misafir olarak katılınan masalar) -----
 

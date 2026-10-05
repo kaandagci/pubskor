@@ -12,15 +12,17 @@ import { confirmSheet, online, toast } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { Check, ChevronRight, MapPin, Pencil, Plus, Radio, SlidersHorizontal, Smartphone, X, KIND_ICONS, METRIC_ICONS } from '../components/icons';
 import { AsyncButton, Field, Switch, TopBar } from '../components/ui';
-import { VenuePicker, type VenueChoice } from './venue-picker';
+import { VenuePicker, presetChoice, type VenueChoice } from './venue-picker';
 
 type Step = 0 | 1 | 2;
 
 export function NewVisit() {
     const { route, query } = useLocation();
     const preset = query.mekan ? venueById.value.get(query.mekan) : undefined;
-    const [step, setStep] = useState<Step>(preset ? 1 : 0);
-    const [venue, setVenue] = useState<VenueChoice | null>(preset ? { venueId: preset.id, venue: { id: preset.id, name: preset.name, area: preset.area } } : null);
+    // Mekan sayfasından "burada puanla" ile gelindiyse (katalog mekanı) bir kez kullan
+    const [fromPlace] = useState(() => { const c = presetChoice.value; presetChoice.value = null; return c; });
+    const [step, setStep] = useState<Step>(preset || fromPlace ? 1 : 0);
+    const [venue, setVenue] = useState<VenueChoice | null>(preset ? { venueId: preset.id, venue: { id: preset.id, name: preset.name, area: preset.area } } : fromPlace);
     const [date, setDate] = useState(todayLocal());
     const [selected, setSelected] = useState<Set<string>>(new Set(me.value ? [me.value.id] : []));
     const [touched, setTouched] = useState(false);
@@ -28,7 +30,7 @@ export function NewVisit() {
     useEffect(() => { if (!touched && me.value && !selected.size) setSelected(new Set([me.value.id])); }, [me.value?.id]);
     const [guests, setGuests] = useState<string[]>([]);
     const [guestName, setGuestName] = useState('');
-    const [kinds, setKinds] = useState<KindId[]>(defaultKindsFor(preset?.kind));
+    const [kinds, setKinds] = useState<KindId[]>(defaultKindsFor(preset?.kind ?? fromPlace?.venue.kind));
     const [off, setOff] = useState<Set<MetricId>>(new Set());
     const [showMetrics, setShowMetrics] = useState(false);
     const [mode, setMode] = useState<'live' | 'single'>(online.value ? 'live' : 'single');

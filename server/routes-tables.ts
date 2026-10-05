@@ -5,9 +5,11 @@ import { NA, isCell, sheetFilled } from '../shared/scoring';
 import { isValidDate } from '../shared/text';
 import type { Participant, Sheet, TableSetup, TableStatus, TableView } from '../shared/types';
 import { LIMITS, validPersonName, validateKinds, validateMetrics, validateParticipants, validateSheet, validateVenueInput, validateVisitInput } from '../shared/validate';
-import { authMember, checkMember, loadCrew, mutateCrew, parseToken, safeEq, seatToken, sha, type Ctx } from './crew';
+import { authMember, checkMember, loadCrew, memberOfUser, mutateCrew, parseToken, safeEq, seatToken, sha, type Ctx } from './crew';
+import type { IdentityUser } from './identity';
 import { HttpError, json, readJSON, sleep } from './http';
-import { insertVisit } from './routes-visits';
+import { activity, insertVisit } from './routes-visits';
+import { istanbulDay, partyHash, recordActivity, removeActivity } from './popular';
 
 const TABLE_TTL = 12 * 3600 * 1000;
 
@@ -25,8 +27,10 @@ interface TableDoc {
     expiresAt: number;
     setup: TableSetup;
     claims: Record<string, Claim>;
-    /** Masaya bağlanmış üyelerin jeton özetleri (her istekte ekip belgesini okumamak için). */
+    /** Masaya bağlanmış üyelerin eski cihaz anahtarı özetleri (her istekte ekip belgesini okumamak için). */
     memberHashes: Record<string, string>;
+    /** Masaya hesabıyla bağlanmış üyeler: üye kimliği → hesap kimliği. */
+    memberUsers?: Record<string, string>;
     visitId: string | null;
     result: { score: number | null; venueName: string } | null;
 }
@@ -60,10 +64,15 @@ async function mutateTable<T>(ctx: Ctx, code: string, fn: (t: TableDoc) => T): P
 interface Who { seat: string | null; memberId: string | null; isHost: boolean }
 
 /** İsteği yapanın masadaki kimliği. Doğrulanamazsa anonim (yalnızca katılma ekranını görür). */
-function identify(req: Request, t: TableDoc): Who {
+function identify(req: Request, t: TableDoc, user: IdentityUser | null): Who {
     const token = parseToken(req);
     const anon: Who = { seat: null, memberId: null, isHost: false };
-    if (!token) return anon;
+    if (!token) {
+        const memberId = user ? Object.entries(t.memberUsers ?? {}).find(([, uid]) => uid === user.id)?.[0] : undefined;
+        if (!memberId) return anon;
+        const p = t.setup.participants.find(x => x.memberId === memberId);
+        return { seat: p?.id ?? null, memberId, isHost: memberId === t.hostId };
+    }
     if (token.kind === 'seat') {
         const c = t.claims[token.pid];
         if (token.code !== t.code || !c?.tokenHash || !safeEq(sha(token.secret), c.tokenHash)) return anon;
@@ -146,7 +155,7 @@ function validateSetup(b: Record<string, unknown>, base?: TableSetup): TableSetu
 
 export async function createTable(ctx: Ctx, req: Request) {
     const b = await readJSON(req);
-    const { crew, member } = await authMember(ctx, req);
+    const { crew, member, user } = await authMember(ctx, req);
     const setup = validateSetup((b.setup ?? {}) as Record<string, unknown>);
     if (setup.venueId && !crew.venues.some(v => v.id === setup.venueId)) setup.venueId = null;
     const ids = new Set(crew.members.filter(m => !m.removed).map(m => m.id));
@@ -161,7 +170,8 @@ export async function createTable(ctx: Ctx, req: Request) {
         const d: TableDoc = {
             v: 1, code, crewId: crew.id, crewName: crew.name, hostId: member.id, status: 'open',
             createdAt: now, updatedAt: now, expiresAt: now + TABLE_TTL, setup, claims,
-            memberHashes: { [member.id]: member.tokenHash! }, visitId: null, result: null
+            memberHashes: member.tokenHash ? { [member.id]: member.tokenHash } : {},
+            memberUsers: user ? { [member.id]: user.id } : {}, visitId: null, result: null
         };
         if ((await ctx.kv.setJSON(tableKey(code), d, { onlyIfNew: true })).modified) doc = d;
     }
@@ -170,12 +180,17 @@ export async function createTable(ctx: Ctx, req: Request) {
     await mutateCrew(ctx, crew.id, c => {
         c.tables.push({ code: t.code, venueName: t.setup.venue.name, hostId: member.id, createdAt: now, expiresAt: t.expiresAt });
     });
+    // Masa açıldı: grup bugün bu mekanda (anonim, puansız)
+    const placeId = (setup.venueId ? crew.venues.find(v => v.id === setup.venueId)?.placeId : null) ?? setup.venue.placeId;
+    if (placeId && crew.shareStats !== false) {
+        await recordActivity(ctx.kv, { day: istanbulDay(now), party: partyHash(ctx.statsSalt, 'crew', crew.id), placeId, score: null, kinds: setup.kinds, now });
+    }
     return json({ view: buildView(t, {}, { seat: hostSeat?.id ?? null, memberId: member.id, isHost: true }) }, 201);
 }
 
 export async function getTable(ctx: Ctx, req: Request, p: Record<string, string>) {
     const { data: t } = await loadTable(ctx, p.code);
-    const who = identify(req, t);
+    const who = identify(req, t, await ctx.identity.user(req));
     const docs = who.seat || who.isHost ? await readSheets(ctx, t) : {};
     return json(buildView(t, docs, who));
 }
@@ -185,15 +200,25 @@ export async function joinTable(ctx: Ctx, req: Request, p: Record<string, string
     const first = await loadTable(ctx, p.code);
     requireOpen(first.data);
     const token = parseToken(req);
+    const user = token ? null : await ctx.identity.user(req);
 
-    // Ekip üyesi: ekip belgesinden doğrula, masaya bağla
+    // Ekip üyesi (hesabıyla ya da eski cihaz anahtarıyla): ekip belgesinden doğrula, masaya bağla
+    let m: { id: string; name: string; color: number; tokenHash: string | null } | null = null;
     if (token?.kind === 'member' && token.crewId === first.data.crewId) {
         const entry = await loadCrew(ctx, token.crewId);
-        const m = entry && checkMember(entry.data, token);
+        m = entry && checkMember(entry.data, token);
         if (!m) throw new HttpError(401, 'Bu cihazın ekip erişimi geçersiz', { code: 'token_invalid' });
+    } else if (user) {
+        const entry = await loadCrew(ctx, first.data.crewId);
+        m = entry ? memberOfUser(entry.data, user.id) : null;
+    }
+    if (m) {
+        const mm = m;
         const { table } = await mutateTable(ctx, p.code, t => {
             requireOpen(t);
-            t.memberHashes[m.id] = m.tokenHash!;
+            const m = mm;
+            if (user) t.memberUsers = { ...(t.memberUsers ?? {}), [m.id]: user.id };
+            else t.memberHashes[m.id] = m.tokenHash!;
             let seat = t.setup.participants.find(x => x.memberId === m.id);
             const wanted = typeof b.pid === 'string' ? t.setup.participants.find(x => x.id === b.pid) : undefined;
             if (!seat && wanted && !wanted.memberId && !t.claims[wanted.id]) {
@@ -205,7 +230,7 @@ export async function joinTable(ctx: Ctx, req: Request, p: Record<string, string
             }
             t.claims[seat.id] = { tokenHash: null, member: m.id, at: ctx.now() };
         });
-        const who = identify(req, table);
+        const who = identify(req, table, user);
         return json({ view: buildView(table, await readSheets(ctx, table), who) });
     }
 
@@ -248,7 +273,7 @@ export async function putSheet(ctx: Ctx, req: Request, p: Record<string, string>
     const b = await readJSON(req);
     const { data: t } = await loadTable(ctx, p.code);
     requireOpen(t);
-    const who = identify(req, t);
+    const who = identify(req, t, await ctx.identity.user(req));
     const participant = t.setup.participants.find(x => x.id === p.pid);
     if (!participant) throw new HttpError(404, 'Bu kişi masada yok');
     const allowed = who.seat === p.pid || (who.isHost && !t.claims[p.pid]);
@@ -264,7 +289,8 @@ export async function putSheet(ctx: Ctx, req: Request, p: Record<string, string>
 export async function patchTable(ctx: Ctx, req: Request, p: Record<string, string>) {
     const b = await readJSON(req);
     const first = await loadTable(ctx, p.code);
-    requireHost(identify(req, first.data));
+    const user = await ctx.identity.user(req);
+    requireHost(identify(req, first.data, user));
     let removed: string[] = [];
     const { table } = await mutateTable(ctx, p.code, t => {
         requireOpen(t);
@@ -286,21 +312,22 @@ export async function patchTable(ctx: Ctx, req: Request, p: Record<string, strin
             if (ref) ref.venueName = table.setup.venue.name;
         }).catch(() => undefined);
     }
-    return json({ view: buildView(table, await readSheets(ctx, table), identify(req, table)) });
+    return json({ view: buildView(table, await readSheets(ctx, table), identify(req, table, user)) });
 }
 
 export async function releaseSeat(ctx: Ctx, req: Request, p: Record<string, string>) {
     const first = await loadTable(ctx, p.code);
-    requireHost(identify(req, first.data));
+    const user = await ctx.identity.user(req);
+    requireHost(identify(req, first.data, user));
     const { table } = await mutateTable(ctx, p.code, t => { requireOpen(t); delete t.claims[p.pid]; });
-    return json({ view: buildView(table, await readSheets(ctx, table), identify(req, table)) });
+    return json({ view: buildView(table, await readSheets(ctx, table), identify(req, table, user)) });
 }
 
 /** Masayı kapatır ve ziyareti oluşturur. Ziyaret kimliği masaya bağlı olduğu için tekrar denemek güvenlidir. */
 export async function finishTable(ctx: Ctx, req: Request, p: Record<string, string>) {
     const b = await readJSON(req);
     const { data: t } = await loadTable(ctx, p.code);
-    const who = identify(req, t);
+    const who = identify(req, t, await ctx.identity.user(req));
     requireHost(who);
     if (t.status === 'closed' && t.visitId) return json({ visitId: t.visitId, view: buildView(t, await readSheets(ctx, t), who) });
     requireOpen(t);
@@ -320,7 +347,7 @@ export async function finishTable(ctx: Ctx, req: Request, p: Record<string, stri
     });
     if (!v.ok) throw new HttpError(400, v.error, { code: 'incomplete' });
     const venueName = t.setup.venue.name;
-    await mutateCrew(ctx, t.crewId, crew => {
+    const { crew: savedCrew } = await mutateCrew(ctx, t.crewId, crew => {
         if (!crew.members.some(m => m.id === who.memberId && !m.removed)) throw new HttpError(403, 'Artık bu ekibin üyesi değilsin');
         const clean = { ...v.value };
         if (clean.venueId && !crew.venues.some(x => x.id === clean.venueId)) { clean.venueId = null; clean.venue = t.setup.venue; }
@@ -330,14 +357,24 @@ export async function finishTable(ctx: Ctx, req: Request, p: Record<string, stri
     const { table } = await mutateTable(ctx, t.code, x => {
         x.status = 'closed'; x.visitId = visitId; x.result = { score: v.value.score, venueName };
     });
+    const saved = savedCrew.visits.find(x => x.id === visitId);
+    if (saved) await activity(ctx, savedCrew, saved.venueId, saved.date);
     return json({ visitId, view: buildView(table, docs, who) });
 }
 
 export async function cancelTable(ctx: Ctx, req: Request, p: Record<string, string>) {
     const first = await loadTable(ctx, p.code);
-    requireHost(identify(req, first.data));
+    const user = await ctx.identity.user(req);
+    requireHost(identify(req, first.data, user));
     const { table } = await mutateTable(ctx, p.code, t => { if (t.status === 'open') t.status = 'cancelled'; });
-    await mutateCrew(ctx, table.crewId, c => { c.tables = c.tables.filter(x => x.code !== table.code); }).catch(() => undefined);
+    const after = await mutateCrew(ctx, table.crewId, c => { c.tables = c.tables.filter(x => x.code !== table.code); }).catch(() => null);
     await Promise.allSettled(table.setup.participants.map(x => ctx.kv.delete(sheetKey(table.code, x.id))));
+    // İptal edilen masanın "buradayım" kaydını, o gün başka ziyaret yoksa geri al
+    const placeId = (table.setup.venueId ? after?.crew.venues.find(v => v.id === table.setup.venueId)?.placeId : null) ?? table.setup.venue.placeId;
+    if (after && placeId) {
+        const venueId = after.crew.venues.find(v => v.placeId === placeId)?.id;
+        if (venueId) await activity(ctx, after.crew, venueId, istanbulDay(table.createdAt));
+        else await removeActivity(ctx.kv, { day: istanbulDay(table.createdAt), party: partyHash(ctx.statsSalt, 'crew', after.crew.id), placeId });
+    }
     return json({ ok: true });
 }

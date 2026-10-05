@@ -4,7 +4,7 @@ import { useLocation } from 'preact-iso';
 import { tierOf } from '../../shared/metrics';
 import { canGoBack } from '../lib/nav';
 import { closeSheet, dismissToast, sheets, toasts } from '../state/ui';
-import { ArrowLeft, CircleCheck, House, Info, Map, Plus, TriangleAlert, Trophy, Users, X } from './icons';
+import { ArrowLeft, CircleCheck, Compass, House, Info, Plus, TriangleAlert, Trophy, Users, X } from './icons';
 
 // ----- Gezinme -----
 
@@ -42,9 +42,9 @@ export function TopBar(props: { title?: ComponentChildren; back?: string | false
 
 const TABS = [
     { href: '/', label: 'Akış', Icon: House, match: (p: string) => p === '/' || p.startsWith('/ziyaret') },
-    { href: '/siralama', label: 'Sıralama', Icon: Trophy, match: (p: string) => p.startsWith('/siralama') || p.startsWith('/mekan') },
+    { href: '/kesfet', label: 'Keşfet', Icon: Compass, match: (p: string) => p.startsWith('/kesfet') || p.startsWith('/yer') || p.startsWith('/oneri') },
     null,
-    { href: '/harita', label: 'Harita', Icon: Map, match: (p: string) => p.startsWith('/harita') },
+    { href: '/siralama', label: 'Sıralama', Icon: Trophy, match: (p: string) => p.startsWith('/siralama') || p.startsWith('/mekan') || p.startsWith('/harita') },
     { href: '/ekip', label: 'Ekip', Icon: Users, match: (p: string) => p.startsWith('/ekip') || p.startsWith('/kisi') }
 ];
 
