@@ -15,6 +15,7 @@ import { openSheet, toastError } from '../state/ui';
 import { ChevronDown, ChevronRight, ListOrdered, LocateFixed, Map as MapIcon, Sparkles, TrendingDown, TrendingUp } from '../components/icons';
 import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Segmented, Spinner, TopBar } from '../components/ui';
+import { PlaceEmblem } from '../components/PlaceEmblem';
 
 const ExploreMap = lazy(() => import('./explore-map'));
 
@@ -55,6 +56,7 @@ function PopularRow({ p, rank, dist }: { p: PopularItem; rank: number; dist: num
     return (
         <a class="pop-row" href={`/yer/${p.id}`}>
             <span class="pop-rank num">{rank}</span>
+            <PlaceEmblem place={p} size={40} />
             <span class="grow" style={{ minWidth: 0 }}>
                 <span class="truncate" style={{ display: 'block', fontWeight: 650 }}>{p.name}</span>
                 <span class="small faint truncate" style={{ display: 'block' }}>{[venueKindLabel(p.kind), p.district, dist != null ? fmtDistance(dist) : null].filter(Boolean).join(' · ')}</span>
@@ -71,6 +73,7 @@ function PopularRow({ p, rank, dist }: { p: PopularItem; rank: number; dist: num
 function NearbyRow({ p, dist }: { p: CatalogPlace; dist: number | null }) {
     return (
         <a class="pop-row" href={`/yer/${p.id}`}>
+            <PlaceEmblem place={p} size={40} />
             <span class="grow" style={{ minWidth: 0 }}>
                 <span class="truncate" style={{ display: 'block', fontWeight: 600 }}>{p.name}</span>
                 <span class="small faint truncate" style={{ display: 'block' }}>{[venueKindLabel(p.kind), p.address || p.district].filter(Boolean).join(' · ')}</span>
@@ -90,7 +93,8 @@ function DistrictSheet({ current, onPick }: { current: string | null; onPick: (n
         <div class="district-grid">
             {list.map(d => (
                 <button key={d.id} class="district-cell" aria-pressed={current === d.name} onClick={() => onPick(d.name)}>
-                    <b>{d.name}</b><span class="tiny faint">{counts[d.name] ? `${counts[d.name]} mekan` : d.side === 'anadolu' ? 'Anadolu' : 'Avrupa'}</span>
+                    <PlaceEmblem place={{ district: d.name }} size={34} />
+                    <span class="dc-text"><b>{d.name}</b><span class="tiny faint">{counts[d.name] ? `${counts[d.name]} mekan` : d.side === 'anadolu' ? 'Anadolu' : 'Avrupa'}</span></span>
                 </button>
             ))}
         </div>
@@ -218,7 +222,8 @@ export function Explore() {
                                 <div class="district-grid">
                                     {[...DISTRICTS].sort((a, b) => (counts[b.name] ?? 0) - (counts[a.name] ?? 0)).map(d => (
                                         <button key={d.id} class="district-cell" onClick={() => setArea({ type: 'district', name: d.name })}>
-                                            <b>{d.name}</b><span class="tiny faint">{counts[d.name] ?? 0} mekan</span>
+                                            <PlaceEmblem place={{ district: d.name }} size={34} />
+                                            <span class="dc-text"><b>{d.name}</b><span class="tiny faint">{counts[d.name] ?? 0} mekan</span></span>
                                         </button>
                                     ))}
                                 </div>

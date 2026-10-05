@@ -12,6 +12,7 @@ import { Spark } from '../components/charts';
 import { ScoreRing } from '../components/ScoreRing';
 import { Empty, TopBar } from '../components/ui';
 import { VenuePicker, type VenueChoice } from './venue-picker';
+import { PlaceEmblem } from '../components/PlaceEmblem';
 
 type Tab = 'rank' | 'wish';
 
@@ -88,6 +89,7 @@ export function Ranking() {
                                     {(top.length >= 3 ? rest : ranked).map((r, i) => (
                                         <a class="rank-row" key={r.s.venue.id} href={`/mekan/${r.s.venue.id}`}>
                                             <span class="rank-n">{(top.length >= 3 ? 4 : 1) + i}</span>
+                                            <PlaceEmblem place={r.s.venue} size={40} />
                                             <div class="grow" style={{ minWidth: 0 }}>
                                                 <div class="vrow-title" style={{ fontSize: '16.5px' }}>{r.s.venue.name}</div>
                                                 <div class="vrow-meta">{[venueKindLabel(r.s.venue.kind), r.s.venue.area, `${r.s.count} ziyaret`].filter(Boolean).join(' · ')}</div>

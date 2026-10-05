@@ -14,8 +14,9 @@ import { ApiError, request } from '../lib/api';
 import { authUser } from '../lib/auth';
 import { summaryById, venueSummaries } from '../state/data';
 import { online, toast } from '../state/ui';
-import { LocateFixed, MapPin, Plus, Search, VenueIcon, X } from '../components/icons';
+import { LocateFixed, Plus, Search, X } from '../components/icons';
 import { AsyncButton, Spinner, Switch } from '../components/ui';
+import { PlaceEmblem } from '../components/PlaceEmblem';
 
 export interface VenueChoice { venueId: string | null; venue: VenueInput }
 
@@ -144,7 +145,7 @@ export function VenuePicker({ onPick }: { onPick: (c: VenueChoice) => void }) {
 
     const placeRow = (p: Place, i: number) => (
         <button class="place" key={(p.placeId ?? p.osm ?? '') + i} onClick={() => pickPlace(p)}>
-            <span class="p-icon"><MapPin /></span>
+            <PlaceEmblem place={{ area: p.area, lat: p.lat, lng: p.lng }} size={40} />
             <span class="grow" style={{ minWidth: 0 }}>
                 <span class="li-title truncate" style={{ display: 'block', fontWeight: 600 }}>{p.name}</span>
                 <span class="small faint truncate" style={{ display: 'block' }}>{[p.label ?? kindLabel(p.kind), p.area, p.address].filter(Boolean).join(' · ')}</span>
@@ -170,7 +171,7 @@ export function VenuePicker({ onPick }: { onPick: (c: VenueChoice) => void }) {
                     <div class="eyebrow mb-8">{q ? 'Ekibin mekanları' : 'Son gidilenler'}</div>
                     {mine.map(s => (
                         <button class="place" key={s.venue.id} onClick={() => onPick({ venueId: s.venue.id, venue: { id: s.venue.id, name: s.venue.name, kind: s.venue.kind, area: s.venue.area } })}>
-                            <span class="p-icon mine"><VenueIcon /></span>
+                            <PlaceEmblem place={s.venue} size={40} />
                             <span class="grow" style={{ minWidth: 0 }}>
                                 <span class="truncate" style={{ display: 'block', fontWeight: 600 }}>{s.venue.name}</span>
                                 <span class="small faint truncate" style={{ display: 'block' }}>

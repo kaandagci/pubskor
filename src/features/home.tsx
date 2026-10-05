@@ -14,7 +14,7 @@ import { Check, ChevronDown, ChevronRight, CloudOff, Compass, History, Link as L
 import { profile } from '../state/user';
 import { AppMark, ScoreRing } from '../components/ScoreRing';
 import { Empty, Spinner, Stat, TopBar } from '../components/ui';
-import { VisitHero, VisitRow } from '../components/visit';
+import { VisitRow } from '../components/visit';
 import { openInvite } from './crew';
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -237,10 +237,9 @@ function CrewHome() {
         );
     }
 
-    // Ay başlıklarıyla gruplanmış liste (ilk ziyaret büyük kart)
-    const [first, ...rest] = filtered;
-    const groups: { label: string; items: typeof rest }[] = [];
-    for (const v of rest) {
+    // Ay başlıklarıyla gruplanmış liste: her ziyaret aynı boyda satır
+    const groups: { label: string; items: typeof filtered }[] = [];
+    for (const v of filtered) {
         const label = `${MONTHS[Number(v.date.slice(5, 7)) - 1]} ${v.date.slice(0, 4)}`;
         const g = groups[groups.length - 1];
         if (g && g.label === label) g.items.push(v); else groups.push({ label, items: [v] });
@@ -309,19 +308,14 @@ function CrewHome() {
                                 <button key={k} class="chip" aria-pressed={filter === k} onClick={() => setFilter(k)}>{l}</button>
                             ))}
                         </div>
-                        {!first ? (
+                        {!groups.length ? (
                             <p class="muted center mt-24">Bu filtreyle eşleşen ziyaret yok.</p>
-                        ) : (
-                            <>
-                                <VisitHero v={first} />
-                                {groups.map(g => (
-                                    <div key={g.label} class="mt-24">
-                                        <div class="eyebrow mb-12">{g.label}</div>
-                                        {g.items.map(v => <VisitRow key={v.id} v={v} />)}
-                                    </div>
-                                ))}
-                            </>
-                        )}
+                        ) : groups.map((g, i) => (
+                            <div key={g.label} class={i ? 'mt-24' : ''}>
+                                <div class="list-head">{g.label}</div>
+                                <div class="vlist">{g.items.map(v => <VisitRow key={v.id} v={v} />)}</div>
+                            </div>
+                        ))}
                     </section>
                 )}
                 {me.value && list.length > 0 && (

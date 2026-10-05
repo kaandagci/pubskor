@@ -21,7 +21,7 @@ import { openShareSheet } from './share-sheet';
 function Photos({ v, name }: { v: Visit; name: string }) {
     const [idx, setIdx] = useState(0);
     const pending = pendingIds.value.has(v.id);
-    if (!v.photos.length) return <div class="detail-media"><Cover visit={v} name={name} eager /></div>;
+    if (!v.photos.length) return <div class="detail-media"><Cover visit={v} venue={venueById.value.get(v.venueId)} name={name} eager /></div>;
     return (
         <div class="detail-media">
             <div class="photo-strip" onScroll={e => { const el = e.currentTarget as HTMLElement; setIdx(Math.round(el.scrollLeft / el.clientWidth)); }}>

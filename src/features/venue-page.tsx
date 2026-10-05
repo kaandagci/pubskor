@@ -114,7 +114,7 @@ export function VenuePage() {
         <>
             <TopBar back="/siralama" transparent actions={<button class="icon-btn filled" aria-label="Diğer" onClick={menu}><Ellipsis /></button>} />
             <main class="page flush" style={{ marginTop: 'calc(-56px - env(safe-area-inset-top, 0px))' }}>
-                <div class="venue-hero"><Cover visit={latest} name={v.name} eager /></div>
+                <div class="venue-hero"><Cover visit={latest} venue={v} name={v.name} eager /></div>
                 <div style={{ marginTop: '-64px', position: 'relative' }}>
                     <div class="row-wrap" style={{ gap: '6px' }}>
                         {rank >= 0 && s.count > 0 && <span class="badge badge-accent">#{rank + 1} sıralamada</span>}

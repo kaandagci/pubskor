@@ -15,6 +15,7 @@ import { BookmarkPlus, ChevronRight, Flag, Link as LinkIcon, MapPin, Navigation,
 import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Empty, Loading, TierChip, TopBar } from '../components/ui';
 import { PlaceStats } from './explore';
+import { EmblemCover } from '../components/PlaceEmblem';
 import { addToWishlist } from './ranking';
 import { choiceFromCatalog, presetChoice } from './venue-picker';
 
@@ -69,8 +70,10 @@ export function PlacePage() {
 
     return (
         <>
-            <TopBar back="/kesfet" />
-            <main class="page">
+            <TopBar back="/kesfet" transparent />
+            <main class="page flush" style={{ marginTop: 'calc(-56px - env(safe-area-inset-top, 0px))' }}>
+                <div class="venue-hero"><EmblemCover place={place} /></div>
+                <div style={{ marginTop: '-64px', position: 'relative' }}>
                 {place.community && <span class="badge">Topluluk ekledi</span>}
                 {place.hidden && (
                     <div class="banner warn mb-12">
@@ -81,6 +84,7 @@ export function PlacePage() {
                 <h1 class="display mt-8" style={{ fontSize: '34px', lineHeight: 1.05 }}>{place.name}</h1>
                 <p class="muted mt-8">{sub}</p>
                 {place.address && <div class="vhero-meta"><MapPin size={14} />{place.address}</div>}
+                </div>
 
                 <div class="row mt-16" style={{ gap: '8px' }}>
                     {hasCrew && <button class="btn btn-primary grow" onClick={rateHere}><Plus />Burada puanla</button>}
