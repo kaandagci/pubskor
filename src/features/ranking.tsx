@@ -10,15 +10,16 @@ import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Bookmark, BookmarkPlus, Compass, Plus, Trash2, Trophy } from '../components/icons';
 import { Spark } from '../components/charts';
 import { ScoreRing } from '../components/ScoreRing';
-import { Empty, TopBar } from '../components/ui';
+import { Empty, Segmented, TopBar } from '../components/ui';
+import { CommunityRanking } from './community';
 import { VenuePicker, type VenueChoice } from './venue-picker';
 import { PlaceEmblem } from '../components/PlaceEmblem';
 
-type Tab = 'rank' | 'wish';
+type Tab = 'rank' | 'all' | 'wish';
 
 export function Ranking() {
     const { query, route } = useLocation();
-    const [tab, setTab] = useState<Tab>(query.liste === 'gidilecek' ? 'wish' : 'rank');
+    const [tab, setTab] = useState<Tab>(query.liste === 'gidilecek' ? 'wish' : query.liste === 'herkes' ? 'all' : 'rank');
     const [cat, setCat] = useState<'overall' | GroupId>('overall');
     const [metric, setMetric] = useState<MetricId | null>(null);
     const [tags, setTags] = useState<string[]>([]);
@@ -41,13 +42,16 @@ export function Ranking() {
         <>
             <TopBar title="Mekanlar" actions={<a class="btn btn-sm btn-secondary" href="/oneri"><Compass />Nereye gidelim?</a>} />
             <main class="page">
-                <div class="segmented mb-16" role="tablist">
-                    <button role="tab" aria-pressed={tab === 'rank'} onClick={() => { setTab('rank'); route('/siralama', true); }}><Trophy size={15} style={{ verticalAlign: '-2px', marginRight: '6px' }} />Sıralama</button>
-                    <button role="tab" aria-pressed={tab === 'wish'} onClick={() => { setTab('wish'); route('/siralama?liste=gidilecek', true); }}><Bookmark size={15} style={{ verticalAlign: '-2px', marginRight: '6px' }} />Gidilecekler{wishlist.value.length ? ` · ${wishlist.value.length}` : ''}</button>
+                <div class="mb-16">
+                    <Segmented label="Liste" value={tab} onChange={(t: Tab) => { setTab(t); route(t === 'rank' ? '/siralama' : `/siralama?liste=${t === 'all' ? 'herkes' : 'gidilecek'}`, true); }}
+                        options={[{ value: 'rank', label: 'Ekibimiz' }, { value: 'all', label: 'Herkes' }, { value: 'wish', label: `Gidilecek${wishlist.value.length ? ` · ${wishlist.value.length}` : ''}` }]} />
                 </div>
 
-                {tab === 'wish' ? <Wishlist /> : !ranked.length && !tags.length ? (
-                    <Empty art={<ScoreRing score={null} size={84} stroke={10} showValue={false} />} title="Sıralama henüz boş" action={<a class="btn btn-primary" href="/yeni"><Plus />Ziyaret ekle</a>}>
+                {tab === 'wish' ? <Wishlist /> : tab === 'all' ? <CommunityRanking /> : !ranked.length && !tags.length ? (
+                    <Empty art={<ScoreRing score={null} size={84} stroke={10} showValue={false} />} title="Sıralama henüz boş" action={<div class="stack gap-8" style={{ alignItems: 'center' }}>
+                        <a class="btn btn-primary" href="/yeni"><Plus />Ziyaret ekle</a>
+                        <button class="btn btn-ghost" onClick={() => { setTab('all'); route('/siralama?liste=herkes', true); }}><Trophy />Topluluk sıralamasına bak</button>
+                    </div>}>
                         Puanladığınız mekanlar burada kategorilere göre sıralanır.
                     </Empty>
                 ) : (

@@ -14,7 +14,8 @@ import { rememberReturn } from './auth';
 import { toast } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { ArrowLeft, Check } from '../components/icons';
-import { AsyncButton, Field, Loading, TopBar } from '../components/ui';
+import { AsyncButton, Field, Loading, Segmented, TopBar } from '../components/ui';
+import { PUBLIC_DELAY_LABEL, publicNameOk, type PublicMode } from '../../shared/public';
 
 const COLORS = [0, 1, 2, 3, 4, 5, 6, 7];
 
@@ -37,10 +38,11 @@ export function CreateCrew() {
     const [crewName, setCrewName] = useState('');
     const [name, setName] = useState(profile.value?.name ?? local.raw<{ name: string }[] | null>('pubskor_roster', null)?.[0]?.name ?? '');
     const [color, setColor] = useState(profile.value?.color ?? 0);
+    const [publicMode, setPublicMode] = useState<PublicMode>('anon');
     const valid = crewName.trim() && name.trim();
     const submit = async () => {
         try {
-            const r = await request<{ snapshot: CrewSnapshot }>('POST', '/api/auth/crew', { body: { crewName, name, color } });
+            const r = await request<{ snapshot: CrewSnapshot }>('POST', '/api/auth/crew', { body: { crewName, name, color, publicMode } });
             addMembership({ crewId: r.snapshot.id, crewName: r.snapshot.name, memberId: r.snapshot.me, role: 'owner' });
             applySnapshot(r.snapshot);
             toast('Ekip kuruldu!');
@@ -55,7 +57,7 @@ export function CreateCrew() {
             <main class="page no-tabbar">
                 <div class="page-head">
                     <h1 class="display">Ekibini kur</h1>
-                    <p>Ekip; birlikte pub gezdiğin arkadaş grubun. Arşiv yalnızca ekip üyelerine görünür.</p>
+                    <p>Ekip; birlikte gezdiğin arkadaş grubun. Ziyaretler, kişiler, notlar ve fotoğraflar yalnızca ekip üyelerine görünür.</p>
                 </div>
                 <form class="card card-pad-lg" onSubmit={e => { e.preventDefault(); if (valid) void submit(); }}>
                     <Field label="Ekip adı" hint="Örn. Cuma Akşamcıları, Ofis Ekibi">
@@ -65,6 +67,19 @@ export function CreateCrew() {
                         <input class="input" value={name} maxLength={LIMITS.personName} placeholder="Adın" autoComplete="given-name" onInput={e => setName((e.target as HTMLInputElement).value)} />
                     </Field>
                     <div class="field"><span class="label">Rengin</span><ColorPicker value={color} onChange={setColor} name={name} /></div>
+                    <div class="field">
+                        <span class="label">Puanlarınız toplulukta nasıl görünsün?</span>
+                        <Segmented label="Toplulukta görünüm" value={publicMode} onChange={setPublicMode}
+                            options={[{ value: 'anon', label: 'Takma adla' }, { value: 'named', label: 'Ekip adıyla' }, { value: 'off', label: 'Kapalı' }]} />
+                        <p class="hint mt-8">
+                            {publicMode === 'off'
+                                ? 'Puanlarınız yalnızca ekibinizde kalır.'
+                                : publicMode === 'named' && crewName.trim() && !publicNameOk(crewName)
+                                    ? 'Bu ad içki ya da marka adı, hakaret veya iletişim bilgisi içerdiği için toplulukta gösterilmez; yerine takma ad görünür.'
+                                    : `Diğer ekipler mekan, gün ve skoru ${publicMode === 'named' ? 'ekip adınızla' : 'size özel bir takma adla'} görür; kişi adları, notlar ve fotoğraflar asla paylaşılmaz. Yeni puanlar ${PUBLIC_DELAY_LABEL} sonra görünür.`}
+                            {' '}Sonra Ayarlar'dan değiştirebilirsin.
+                        </p>
+                    </div>
                     <button type="submit" hidden />
                 </form>
             </main>

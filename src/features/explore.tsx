@@ -20,12 +20,12 @@ import { PlaceEmblem } from '../components/PlaceEmblem';
 const ExploreMap = lazy(() => import('./explore-map'));
 
 type Area = { type: 'near' } | { type: 'all' } | { type: 'hood'; id: string } | { type: 'district'; name: string };
-type KindFilter = 'all' | 'night' | 'kokteyl' | 'meyhane' | 'sarap' | 'restoran';
+export type KindFilter = 'all' | 'night' | 'kokteyl' | 'meyhane' | 'sarap' | 'restoran';
 
-const KIND_FILTERS: [KindFilter, string][] = [
+export const KIND_FILTERS: [KindFilter, string][] = [
     ['all', 'Tümü'], ['night', 'Bar & pub'], ['kokteyl', 'Kokteyl'], ['meyhane', 'Meyhane'], ['sarap', 'Şarap'], ['restoran', 'Restoran']
 ];
-const kindMatch = (f: KindFilter, k: VenueKind) =>
+export const kindMatch = (f: KindFilter, k: VenueKind) =>
     f === 'all' || (f === 'night' ? k === 'pub' || k === 'bar' || k === 'brewpub' : k === f);
 
 
@@ -271,9 +271,10 @@ export function PlaceStats({ placeId }: { placeId: string }) {
         !s.week && s.month ? `bu ay ${s.month.groups} grup` : null
     ].filter(Boolean);
     return (
-        <div class="stats mt-16">
-            {s.score && <div class="stat"><div class="stat-label">Topluluk puanı</div><div class="stat-value">{fmtScore(s.score.score)}</div><div class="stat-sub">son 3 ay · {s.score.groups} grup</div></div>}
-            {parts.length > 0 && <div class="stat"><div class="stat-label">Popülerlik</div><div class="stat-value" style={{ fontSize: '17px' }}>{parts.join(', ')}</div><div class="stat-sub">Pub Skor grupları</div></div>}
-        </div>
+        parts.length > 0 ? (
+            <div class="stats mt-16">
+                <div class="stat"><div class="stat-label">Popülerlik</div><div class="stat-value" style={{ fontSize: '17px' }}>{parts.join(', ')}</div><div class="stat-sub">Pub Skor grupları</div></div>
+            </div>
+        ) : null
     );
 }

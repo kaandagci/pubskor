@@ -8,6 +8,7 @@ import { haptic, toastError } from '../state/ui';
 import { Bookmark, KIND_ICONS, LocateFixed, Shuffle, Sparkles } from '../components/icons';
 import { ScoreRing } from '../components/ScoreRing';
 import { Spinner, Switch, TierChip, TopBar } from '../components/ui';
+import { CrewRecommendations } from './community';
 
 type Mood = 'overall' | KindId;
 
@@ -95,6 +96,8 @@ export function Discover() {
                         </div>
                     )}
                 </section>
+
+                <CrewRecommendations />
 
                 {wishes.length > 0 && (
                     <section class="section">

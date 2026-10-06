@@ -3,6 +3,7 @@ import type { Ctx } from './crew';
 import { HttpError, fail } from './http';
 import type { Identity } from './identity';
 import type { KV, LegacyStores } from './kv';
+import * as community from './routes-community';
 import * as crew from './routes-crew';
 import * as errors from './routes-errors';
 import * as me from './routes-me';
@@ -54,6 +55,12 @@ const ROUTES: [string, string, Handler][] = [
     ['GET', '/api/crew/legacy', visits.legacyStatus],
     ['POST', '/api/crew/legacy', visits.legacyImport],
 
+    // Topluluk: diğer ekiplerin puanları ve öneriler
+    ['GET', '/api/community/feed', community.getFeed],
+    ['GET', '/api/community/ranking', community.getRanking],
+    ['GET', '/api/community/places/:id', community.getPlace],
+    ['GET', '/api/crew/recommendations', community.getRecommendations],
+
     // Popüler mekanlar ve "Buradayım"
     ['GET', '/api/popular', popular.getPopular],
     ['POST', '/api/checkin', popular.checkin],
@@ -91,6 +98,7 @@ export interface AppOptions {
     statsSalt?: string;
     /** Yerel geliştirme / test: geliştirici giriş ucu açılır. Üretimde asla true olmamalı. */
     dev?: boolean;
+    /** Katalogdaki mekan bilgisi (topluluk akışında mekan adı ve konumu buradan gelir). */
     placeLookup?: (id: string) => CatalogPlace | null | undefined;
     now?: () => number;
 }

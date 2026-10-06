@@ -7,36 +7,18 @@ import { crewStatus, syncCrew, syncError } from '../state/crew';
 import { failedItems, isOwner, me, snapshot, venueById, visits } from '../state/data';
 import { draft } from '../state/draft';
 import { discard, flushing, forceRetry, outbox } from '../state/outbox';
-import { activeCrewId, activeMembership, crewAuth, memberships, setActiveCrew } from '../state/session';
-import { online, openSheet, confirmSheet } from '../state/ui';
+import { activeMembership, crewAuth, memberships } from '../state/session';
+import { online, confirmSheet } from '../state/ui';
 import { Avatar } from '../components/Avatar';
-import { Check, ChevronDown, ChevronRight, CloudOff, Compass, History, Link as LinkIcon, Pencil, Plus, Radio, RefreshCw, Search, Settings, TriangleAlert, Upload, Users, X } from '../components/icons';
+import { ChevronDown, ChevronRight, CloudOff, Compass, History, Link as LinkIcon, Pencil, Plus, Radio, RefreshCw, Search, Settings, TriangleAlert, Upload, Users, X } from '../components/icons';
 import { profile } from '../state/user';
 import { AppMark, ScoreRing } from '../components/ScoreRing';
-import { Empty, Spinner, Stat, TopBar } from '../components/ui';
+import { Empty, Segmented, Spinner, Stat, TopBar } from '../components/ui';
 import { VisitRow } from '../components/visit';
-import { openInvite } from './crew';
+import { openCrewSwitcher, openInvite } from './crew';
+import { CommunityFeed, PublicNotice, RecommendationLink } from './community';
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-
-function openCrewSwitcher() {
-    openSheet({
-        title: 'Ekiplerin',
-        render: close => (
-            <div class="menu">
-                {memberships.value.map(m => (
-                    <button key={m.crewId} class="menu-item" onClick={() => { setActiveCrew(m.crewId); close(); }}>
-                        <span class="li-icon" style={{ width: '36px', height: '36px', borderRadius: '11px', display: 'grid', placeItems: 'center', background: 'var(--surface-2)' }}><Users size={18} /></span>
-                        <span class="grow">{m.crewName}</span>
-                        {m.crewId === activeCrewId.value && <Check style={{ color: 'var(--accent)' }} />}
-                    </button>
-                ))}
-                <a class="menu-item" href="/ekip/kur" onClick={close}><Plus />Yeni ekip kur</a>
-                <a class="menu-item" href="/katil" onClick={close}><LinkIcon />Davetle başka ekibe katıl</a>
-            </div>
-        )
-    });
-}
 
 function SyncIndicator() {
     if (!online.value) return <span class="badge badge-warn" title="Çevrimdışı"><CloudOff />Çevrimdışı</span>;
@@ -106,6 +88,7 @@ function InviteCard({ crewId, members }: { crewId: string; members: number }) {
 }
 
 type Filter = 'all' | 'month' | 'mine' | 'legend';
+type Scope = 'crew' | 'all';
 
 /** Hesabı olup henüz ekibi olmayan kullanıcı. */
 function NoCrewHome() {
@@ -117,7 +100,7 @@ function NoCrewHome() {
             <main class="page">
                 <div class="page-head">
                     <h1 class="display">{p ? `Merhaba ${p.name.split(' ')[0]}` : 'Merhaba'}</h1>
-                    <p>Ekip, birlikte gezdiğin arkadaş grubun. Puanlar, sıralama ve istatistikler ekip içinde birikir.</p>
+                    <p>Ekip, birlikte gezdiğin arkadaş grubun. Kendi ekibini kur, puanlarınızı birlikte tutun; diğer ekiplerin puanları aşağıda.</p>
                 </div>
                 <div class="stack gap-12">
                     <a class="banner" href="/ekip/kur">
@@ -141,6 +124,10 @@ function NoCrewHome() {
                         <ChevronRight class="faint" />
                     </a>
                 </div>
+                <section class="section">
+                    <div class="section-head"><h2>Ekiplerin son puanları</h2></div>
+                    <CommunityFeed />
+                </section>
             </main>
         </>
     );
@@ -154,6 +141,8 @@ export function Home() {
 function CrewHome() {
     const s = snapshot.value;
     const [filter, setFilter] = useState<Filter>('all');
+    const [scope, setScopeState] = useState<Scope>(() => local.get<Scope>('feed-scope', 'crew'));
+    const setScope = (v: Scope) => { local.set('feed-scope', v); setScopeState(v); setSearching(false); setQ(''); };
     const [q, setQ] = useState('');
     const [searching, setSearching] = useState(false);
     const list = visits.value;
@@ -205,7 +194,7 @@ function CrewHome() {
             actions={
                 <>
                     <SyncIndicator />
-                    <button class="icon-btn" aria-label="Ara" onClick={() => { setSearching(!searching); if (searching) setQ(''); }}><Search /></button>
+                    {scope === 'crew' && <button class="icon-btn" aria-label="Ara" onClick={() => { setSearching(!searching); if (searching) setQ(''); }}><Search /></button>}
                     <a class="icon-btn" href="/ayarlar" aria-label="Ayarlar"><Settings /></a>
                 </>
             }
@@ -249,6 +238,9 @@ function CrewHome() {
         <>
             {header}
             <main class="page">
+                <div class="mb-12">
+                    <Segmented label="Akış" value={scope} onChange={setScope} options={[{ value: 'crew', label: 'Ekibimiz' }, { value: 'all', label: 'Herkes' }]} />
+                </div>
                 {searching && (
                     <div class="input-icon mb-12">
                         <Search />
@@ -279,7 +271,15 @@ function CrewHome() {
                         <span class="btn btn-sm btn-secondary">Devam et</span>
                     </a>
                 )}
+                {scope === 'all' ? (
+                    <section class="mt-16">
+                        <PublicNotice />
+                        <div class="mt-12"><RecommendationLink /></div>
+                        <CommunityFeed />
+                    </section>
+                ) : <>
                 <InviteCard crewId={s.id} members={s.members.filter(m => !m.removed).length} />
+                <PublicNotice />
                 <LegacyPrompt />
 
                 {list.length > 0 && (
@@ -297,9 +297,10 @@ function CrewHome() {
                         action={<div class="stack gap-8" style={{ alignItems: 'center' }}>
                             <a class="btn btn-primary btn-lg" href="/yeni"><Plus />İlk ziyareti ekle</a>
                             {s.members.filter(m => !m.removed).length < 2 && <button class="btn btn-ghost" onClick={openInvite}><Users />Önce arkadaşlarını davet et</button>}
+                            <button class="btn btn-ghost" onClick={() => setScope('all')}><Compass />Diğer ekiplerin puanlarına bak</button>
                         </div>}
                     >
-                        İlk pub ziyaretinizi puanlayın; skorlar, sıralama ve istatistikler burada birikecek.
+                        İlk ziyaretinizi puanlayın; skorlar, sıralama ve istatistikler burada birikecek.
                     </Empty>
                 ) : (
                     <section class="section">
@@ -324,6 +325,7 @@ function CrewHome() {
                         <span class="small faint">{me.value.name} olarak bağlısın</span>
                     </div>
                 )}
+                </>}
             </main>
         </>
     );

@@ -10,6 +10,7 @@
 import { createHmac } from 'node:crypto';
 import type { CatalogPlace } from '../shared/places';
 import type { VenueKind } from '../shared/metrics';
+import { publicModeOf, type PublicMode } from '../shared/public';
 import { sleep } from './http';
 import type { KV } from './kv';
 
@@ -193,6 +194,7 @@ export async function aggregate(kv: KV, now: number, lookup: (id: string) => Cat
 interface CrewLike {
     id: string;
     shareStats?: boolean;
+    publicMode?: PublicMode;
     venues: { id: string; placeId?: string | null }[];
     visits: { venueId: string; date: string; deletedAt?: number | null; score: number | null; kinds: string[] }[];
 }
@@ -209,7 +211,7 @@ export async function syncCrewActivity(kv: KV, salt: string, crew: CrewLike, ven
     if (date < dayMinus(today, RAW_DAYS) || date > dayMinus(today, -1)) return;
     const party = partyHash(salt, 'crew', crew.id);
     const same = crew.visits.filter(v => !v.deletedAt && v.date === date && crew.venues.find(x => x.id === v.venueId)?.placeId === placeId);
-    if (crew.shareStats === false || !same.length) { await removeActivity(kv, { day: date, party, placeId }); return; }
+    if (publicModeOf(crew) === 'off' || !same.length) { await removeActivity(kv, { day: date, party, placeId }); return; }
     const scored = same.map(v => v.score).filter((s): s is number => s != null);
     const score = scored.length ? scored.reduce((a, b) => a + b, 0) / scored.length : null;
     await recordActivity(kv, { day: date, party, placeId, score, kinds: [...new Set(same.flatMap(v => v.kinds))], now });

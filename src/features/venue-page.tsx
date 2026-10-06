@@ -15,6 +15,7 @@ import { BookmarkPlus, Ellipsis, Info, KIND_ICONS, LocateFixed, MapPin, Navigati
 import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Empty, Field, Stat, TierChip, TopBar } from '../components/ui';
 import { Cover, VisitRow } from '../components/visit';
+import { PlaceCommunity } from './community';
 import { addToWishlist } from './ranking';
 
 function EditVenue({ id, close }: { id: string; close: () => void }) {
@@ -212,6 +213,7 @@ export function VenuePage() {
                         </section>
                     </>
                 )}
+                {v.placeId && <PlaceCommunity placeId={v.placeId} />}
             </main>
         </>
     );

@@ -430,3 +430,40 @@ button.list-item:active, a.list-item:active { background: var(--fill-4); }
     background: rgba(255, 255, 255, .18); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
 .emblem-cover-label .emblem { box-shadow: none; }
+
+/* ===== Topluluk: ekip etiketi, ekip simgesi, ekip şeridi ===== */
+.crew-tag {
+    display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; flex: 0 1 auto;
+    padding: 2px 8px 2px 6px; border-radius: var(--r-capsule); background: var(--fill-3);
+    font-size: 13px; font-weight: 600; color: var(--label); white-space: nowrap;
+}
+.crew-tag svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--label-2); }
+.crew-tag.anon { color: var(--label-2); }
+.crew-tag.mine { background: var(--tint-soft); color: var(--tint-text); }
+.crew-tag.mine svg { color: var(--tint-text); }
+.vrow-foot .vrow-tier { flex-shrink: 0; }
+.crew-tag-you { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; opacity: .8; }
+.li-title .crew-tag { max-width: 100%; font-size: 15px; padding: 3px 10px 3px 8px; }
+
+.crew-mark {
+    display: inline-grid; place-items: center; flex-shrink: 0; border-radius: 30%;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--pc) 82%, #fff), var(--pc));
+    color: var(--pc-ink, #fff); font-weight: 700; letter-spacing: -.02em; line-height: 1;
+}
+
+.crew-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--gutter)); padding: 2px var(--gutter) 4px; }
+.crew-strip::-webkit-scrollbar { display: none; }
+.crew-pill {
+    display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; max-width: 220px; min-height: 40px;
+    padding: 0 14px 0 7px; border-radius: var(--r-capsule); background: var(--bg-elevated);
+    font-size: 15px; font-weight: 600; color: var(--label); white-space: nowrap;
+    box-shadow: inset 0 0 0 .5px var(--separator);
+    transition: transform var(--spring-snappy-dur) var(--spring-snappy), background .2s;
+}
+.crew-pill:active { transform: scale(.95); transition-duration: 90ms; }
+.crew-pill[aria-pressed="true"] { background: var(--tint-soft); color: var(--tint-text); box-shadow: inset 0 0 0 1.5px var(--tint); }
+.crew-pill svg { width: 18px; height: 18px; margin-left: 5px; }
+.crew-pill.add { background: var(--tint); color: var(--on-tint); box-shadow: none; padding-left: 9px; }
+
+.rec-score { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.rec-score b { font-family: var(--font-rounded); font-size: 20px; }

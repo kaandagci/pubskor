@@ -4,6 +4,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { CrewSnapshot, Member, TableRef, Venue, Visit } from '../shared/types';
 import type { CatalogPlace } from '../shared/places';
+import { aliasFor, publicModeOf, publicNameOk, type PublicMode } from '../shared/public';
 import { foldKey } from '../shared/text';
 import { HttpError, sleep } from './http';
 import type { Identity, IdentityUser } from './identity';
@@ -29,8 +30,10 @@ export interface CrewDoc {
     visits: Visit[];
     tables: TableRef[];
     legacyImported?: boolean;
-    /** Anonim popülerlik istatistiğine katkı (varsayılan açık; kurucu kapatabilir). */
+    /** Eski ayar: anonim popülerlik katkısı. false ise topluluk görünümü kapalı sayılır. */
     shareStats?: boolean;
+    /** Puanların toplulukta görünümü: ekip adıyla, takma adla ya da kapalı (varsayılan takma ad). */
+    publicMode?: PublicMode;
 }
 
 export interface Ctx {
@@ -42,7 +45,7 @@ export interface Ctx {
     statsSalt: string;
     /** Yerel geliştirme / test (geliştirici giriş ucu açık). */
     dev: boolean;
-    /** Yalnızca geliştirmede: popüler listeyi istek anında hesaplamak için mekan bilgisi. */
+    /** Katalogdaki mekan bilgisi (topluluk akışı; geliştirmede popüler listeyi istek anında hesaplamak için de). */
     placeLookup?: (id: string) => CatalogPlace | null | undefined;
     now: () => number;
 }
@@ -204,7 +207,10 @@ export function snapshot(crew: CrewDoc, meId: string, now: number): CrewSnapshot
         visits: owner ? crew.visits : crew.visits.filter(v => !v.deletedAt),
         tables: crew.tables.filter(t => t.expiresAt > now),
         legacyImported: !!crew.legacyImported,
-        shareStats: crew.shareStats !== false
+        shareStats: publicModeOf(crew) !== 'off',
+        publicMode: publicModeOf(crew),
+        publicAlias: aliasFor(crew.id),
+        publicNameOk: publicNameOk(crew.name)
     };
 }
 

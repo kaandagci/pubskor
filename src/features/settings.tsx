@@ -21,8 +21,10 @@ import { authMessage, setPassword } from '../lib/auth';
 import { applyTheme, confirmSheet, openSheet, themePref, toast, toastError, type ThemePref } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { ChevronRight, Crown, Download, FileText, History, KeyRound, LogOut, MessageCircle, RefreshCw, Shield, Trash2, Undo2, Upload, UserPlus, Users } from '../components/icons';
-import { AsyncButton, Segmented, Spinner, Switch, TopBar } from '../components/ui';
-import { openInvite } from './crew';
+import { AsyncButton, Segmented, Spinner, TopBar } from '../components/ui';
+import { openCrewSwitcher, openInvite } from './crew';
+import { PRIVACY_LINE } from './community';
+import { PUBLIC_DELAY_LABEL, type PublicMode } from '../../shared/public';
 
 function Row({ icon, title, sub, onClick, href, danger, right }: { icon: preact.ComponentChildren; title: string; sub?: string; onClick?: () => void; href?: string; danger?: boolean; right?: preact.ComponentChildren }) {
     const body = (<><span class="li-icon">{icon}</span><span class="li-body"><span class="li-title">{title}</span>{sub && <span class="li-sub">{sub}</span>}</span>{right ?? (onClick || href ? <ChevronRight class="chev" /> : null)}</>);
@@ -231,6 +233,42 @@ function Trash() {
     );
 }
 
+/** Ekibin puanlarının toplulukta görünümü: ekip adıyla, takma adla ya da kapalı. Yalnızca kurucu değiştirir. */
+function PublicModeCard({ s, owner }: { s: CrewSnapshot; owner: boolean }) {
+    const mode: PublicMode = s.publicMode ?? (s.shareStats === false ? 'off' : 'anon');
+    const alias = s.publicAlias ?? '';
+    const set = (v: PublicMode) => {
+        if (!owner || v === mode) return;
+        mutate('PATCH', '/api/crew', { publicMode: v })
+            .then(() => toast(v === 'off' ? 'Puanlarınız artık toplulukta görünmüyor' : v === 'anon' ? `Toplulukta “${alias}” olarak görünüyorsunuz` : 'Toplulukta ekip adınızla görünüyorsunuz'))
+            .catch(toastError);
+    };
+    const explain = mode === 'off'
+        ? 'Puanlarınız toplulukta görünmez ve Keşfet’teki anonim “çok gidilenler” sayımına da katılmaz. Diğer ekiplerin puanlarını görmeye devam edersiniz.'
+        : mode === 'anon'
+            ? `Puanlarınız “${alias}” takma adıyla görünür; ekip adınız görünmez. Takma ad ekibinize özeldir ve değişmez.`
+            : s.publicNameOk === false
+                ? `“${s.name}” adı içki ya da marka adı, hakaret veya iletişim bilgisi içerdiği için toplulukta gösterilmiyor; yerine “${alias}” takma adı görünüyor.`
+                : `Puanlarınız “${s.name}” adıyla görünür. Ekip adını değiştirirseniz toplulukta da değişir.`;
+    return (
+        <div class="card card-pad mb-12" id="topluluk" style={{ scrollMarginTop: 'calc(72px + env(safe-area-inset-top, 0px))' }}>
+            <div class="row" style={{ gap: '12px' }}>
+                <span class="li-icon"><Shield /></span>
+                <div class="grow" style={{ minWidth: 0 }}>
+                    <b>Toplulukta görünüm</b>
+                    <div class="small muted">Ekiplerin puanları Akış'ta ve Sıralama'da herkese görünür; öneriler bu puanlardan oluşur.</div>
+                </div>
+            </div>
+            <div class="mt-12" style={owner ? undefined : { opacity: 0.6, pointerEvents: 'none' }}>
+                <Segmented label="Toplulukta görünüm" value={mode} onChange={set}
+                    options={[{ value: 'named', label: 'Ekip adıyla' }, { value: 'anon', label: 'Takma adla' }, { value: 'off', label: 'Kapalı' }]} />
+            </div>
+            <p class="small mt-12">{explain}{owner ? '' : ' Yalnızca ekibin kurucusu değiştirebilir.'}</p>
+            <p class="hint mt-8">{PRIVACY_LINE} Yeni puanlar {PUBLIC_DELAY_LABEL} sonra görünür.</p>
+        </div>
+    );
+}
+
 export function Settings() {
     const { route } = useLocation();
     const s = snapshot.value;
@@ -240,6 +278,11 @@ export function Settings() {
     const [crewName, setCrewName] = useState(s?.name ?? '');
     // Ekip verisi sayfa açıldıktan sonra gelirse alanı doldur
     useEffect(() => { if (s?.name) setCrewName(s.name); }, [s?.name]);
+    // Başka ekrandan bölüme bağlantı (/ayarlar#topluluk)
+    useEffect(() => {
+        const id = location.hash.slice(1);
+        if (id) setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 60);
+    }, []);
 
     const signOut = async () => {
         if (!(await confirmSheet({ title: 'Çıkış yapılsın mı?', body: 'Bu cihazdaki ekip kopyaları silinir. Tekrar giriş yapınca hepsi geri gelir.', confirm: 'Çıkış yap' }))) return;
@@ -324,13 +367,7 @@ export function Settings() {
                                 <button class="btn btn-secondary" type="submit" disabled={!crewName.trim() || crewName === s.name}>Kaydet</button>
                             </form>
                         )}
-                        <div class="list mb-12">
-                            <div class="list-item">
-                                <span class="li-icon"><Shield /></span>
-                                <span class="li-body"><span class="li-title">Popüler listelere anonim katkı</span><span class="li-sub" style={{ whiteSpace: 'normal' }}>Ziyaretleriniz Keşfet'teki “çok gidilenler” sayımına isimsiz eklenir. Ekip, kişi ya da puan ayrıntısı paylaşılmaz.{owner ? '' : ' Yalnızca kurucu değiştirebilir.'}</span></span>
-                                <Switch checked={s.shareStats !== false} onChange={v => { if (owner) mutate('PATCH', '/api/crew', { shareStats: v }).then(() => toast(v ? 'Anonim katkı açıldı' : 'Anonim katkı kapatıldı')).catch(toastError); }} label="Popüler listelere anonim katkı" />
-                            </div>
-                        </div>
+                        <PublicModeCard s={s} owner={owner} />
                         <div class="list">
                             <Row icon={<UserPlus />} title="Davet et" sub="QR kod ya da bağlantı" onClick={openInvite} />
                             {s.members.filter(x => !x.removed).map(x => <MemberRow key={x.id} m={x} />)}
@@ -343,7 +380,7 @@ export function Settings() {
                     <div class="list">
                         {account && <Row icon={<Users />} title={account.name} sub={[account.email, account.provider === 'google' ? 'Google ile' : null].filter(Boolean).join(' · ')} onClick={() => openSheet({ title: 'Hesap profilin', render: c => <AccountSheet close={c} /> })} />}
                         {account && account.provider !== 'google' && <Row icon={<KeyRound />} title="Şifre değiştir" onClick={() => openSheet({ title: 'Şifre değiştir', render: c => <PasswordSheet close={c} /> })} />}
-                        <Row icon={<Users />} title="Ekiplerim" sub={`${memberships.value.length} ekip`} onClick={() => route('/', false)} />
+                        <Row icon={<Users />} title="Ekiplerim" sub={`${memberships.value.length} ekip · yeni ekip kur`} onClick={openCrewSwitcher} />
                         <Row icon={<LogOut />} title="Çıkış yap" onClick={signOut} />
                         <Row icon={<Trash2 />} title="Hesabımı sil" sub="Kalıcı; KVKK kapsamında" onClick={deleteAccount} danger />
                     </div>

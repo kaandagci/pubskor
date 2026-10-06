@@ -10,6 +10,8 @@ import type { IdentityUser } from './identity';
 import { HttpError, json, readJSON, sleep } from './http';
 import { activity, insertVisit } from './routes-visits';
 import { istanbulDay, partyHash, recordActivity, removeActivity } from './popular';
+import { publishCrew } from './public-feed';
+import { publicModeOf } from '../shared/public';
 
 const TABLE_TTL = 12 * 3600 * 1000;
 
@@ -182,7 +184,7 @@ export async function createTable(ctx: Ctx, req: Request) {
     });
     // Masa açıldı: grup bugün bu mekanda (anonim, puansız)
     const placeId = (setup.venueId ? crew.venues.find(v => v.id === setup.venueId)?.placeId : null) ?? setup.venue.placeId;
-    if (placeId && crew.shareStats !== false) {
+    if (placeId && publicModeOf(crew) !== 'off') {
         await recordActivity(ctx.kv, { day: istanbulDay(now), party: partyHash(ctx.statsSalt, 'crew', crew.id), placeId, score: null, kinds: setup.kinds, now });
     }
     return json({ view: buildView(t, {}, { seat: hostSeat?.id ?? null, memberId: member.id, isHost: true }) }, 201);
@@ -358,7 +360,10 @@ export async function finishTable(ctx: Ctx, req: Request, p: Record<string, stri
         x.status = 'closed'; x.visitId = visitId; x.result = { score: v.value.score, venueName };
     });
     const saved = savedCrew.visits.find(x => x.id === visitId);
-    if (saved) await activity(ctx, savedCrew, saved.venueId, saved.date);
+    if (saved) {
+        await activity(ctx, savedCrew, saved.venueId, saved.date);
+        await publishCrew(ctx, savedCrew);
+    }
     return json({ visitId, view: buildView(table, docs, who) });
 }
 

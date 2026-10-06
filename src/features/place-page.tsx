@@ -15,6 +15,7 @@ import { BookmarkPlus, ChevronRight, Flag, Link as LinkIcon, MapPin, Navigation,
 import { ScoreRing } from '../components/ScoreRing';
 import { AsyncButton, Empty, Loading, TierChip, TopBar } from '../components/ui';
 import { PlaceStats } from './explore';
+import { PlaceCommunity } from './community';
 import { EmblemCover } from '../components/PlaceEmblem';
 import { addToWishlist } from './ranking';
 import { choiceFromCatalog, presetChoice } from './venue-picker';
@@ -104,6 +105,7 @@ export function PlacePage() {
                     </a>
                 )}
 
+                <PlaceCommunity placeId={place.id} />
                 <PlaceStats placeId={place.id} />
 
                 <section class="section">

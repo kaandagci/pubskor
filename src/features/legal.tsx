@@ -1,6 +1,7 @@
 // Yasal sayfalar ve yaş onayı. Metinler src/config.ts içindeki LEGAL bilgileriyle doldurulur.
 // Yayından önce bir hukukçuya kontrol ettirilmesi önerilir (bkz. docs/YASAL.md).
 import type { ComponentChildren } from 'preact';
+import { PUBLIC_DELAY_LABEL } from '../../shared/public';
 import { LEGAL } from '../config';
 import { setConsent } from '../state/consent';
 import { AppMark } from '../components/ScoreRing';
@@ -56,19 +57,32 @@ export function Privacy() {
                 <li><b>Saklama ve aktarım:</b> Form kayıtları barındırma sağlayıcısının form hizmetinde ({LEGAL.hosting}) tutulur ve {LEGAL.contactRetention} sonra silinir. Başka kimseyle paylaşılmaz.</li>
             </ul>
 
+            <h2 id="topluluk">Topluluk akışı, sıralaması ve öneriler</h2>
+            <p>Ekiplerin listedeki (Pub Skor mekan listesine bağlı) mekanlara verdiği puanlar, kullanıcıların mekan bulabilmesi ve öneri alabilmesi için Akış'taki “Herkes” bölümünde, topluluk sıralamasında ve mekan sayfalarında gösterilir.</p>
+            <ul>
+                <li><b>Görünen:</b> Mekan, ziyaretin günü (saat değil), ziyaretin genel skoru ve ekibin adı ya da ekibe özel bir takma ad.</li>
+                <li><b>Hiçbir zaman görünmeyen:</b> Kişi adları, ziyarete kimlerin katıldığı, kişisel puan kağıtları, içki kriterleri ve türleri, sipariş defteri, harcama, notlar, fotoğraflar, ekip ve üye kimlikleri. Elle eklenen (listede olmayan) yerler hiç paylaşılmaz.</li>
+                <li><b>Gecikme:</b> Bir ekibin o an nerede olduğu anlaşılmasın diye yeni puanlar {PUBLIC_DELAY_LABEL} sonra herkese görünür.</li>
+                <li><b>Seçim:</b> Ekip kurucusu Ayarlar → Ekip → “Toplulukta görünüm” bölümünden “Ekip adıyla”, “Takma adla” (varsayılan) ya da “Kapalı” seçebilir; ekip üyeleri seçimi aynı yerde görür. “Kapalı” seçilince ekibin puanları topluluktan hemen kaldırılır. Ekip adı içki ya da marka adı, hakaret veya iletişim bilgisi içeriyorsa “Ekip adıyla” seçilse de takma ad gösterilir.</li>
+                <li><b>Öneriler:</b> “Zevkinize göre” önerileri, ekibinin puanlarının diğer ekiplerin herkese açık puanlarıyla karşılaştırılmasıyla o an hesaplanır; sonuç yalnızca ekibine gösterilir ve saklanmaz.</li>
+                <li><b>Kaldırma:</b> Ziyaret silinince, ekip silinince ya da görünüm kapatılınca ilgili kayıtlar topluluktan kaldırılır.</li>
+            </ul>
+
             <h2>Anonim popülerlik istatistiği</h2>
-            <p>Keşfet'teki “bugün / bu hafta / bu ay çok gidilenler” listeleri, ekiplerin kataloğa bağlı mekanlardaki ziyaretlerinden ve “buradayım” bildirimlerinden üretilir. Bu sayımda ekip ya da kişi adı, kimliği, puan kağıdı veya konum geçmişi tutulmaz: her grup, geri çevrilemeyen gizli bir özetle temsil edilir. Bir mekan yalnızca en az 3 farklı gruptan kayıt aldığında listelenir. Ham kayıtlar 60, günlük özetler 90 gün sonra silinir. Ekip kurucusu bu katkıyı Ayarlar → Ekip bölümünden kapatabilir; kapatınca ekibin son kayıtları da sayımdan çıkarılır.</p>
+            <p>Keşfet'teki “bugün / bu hafta / bu ay çok gidilenler” listeleri, ekiplerin kataloğa bağlı mekanlardaki ziyaretlerinden ve “buradayım” bildirimlerinden üretilir. Bu sayımda ekip ya da kişi adı, kimliği, puan kağıdı veya konum geçmişi tutulmaz: her grup, geri çevrilemeyen gizli bir özetle temsil edilir. Bir mekan yalnızca en az 3 farklı gruptan kayıt aldığında listelenir. Ham kayıtlar 60, günlük özetler 90 gün sonra silinir. Ekip kurucusu “Toplulukta görünüm”ü “Kapalı” yaparsa bu katkı da kapanır ve ekibin son kayıtları sayımdan çıkarılır.</p>
 
             <h2>3. Amaçlar ve hukuki sebepler</h2>
             <ul>
                 <li>Hesap, ekip, ziyaret ve canlı masa hizmetinin sunulması: sözleşmenin kurulması ve ifası (KVKK m.5/2-c).</li>
+                <li>Topluluk akışı, sıralaması ve öneriler: ekiplerin birbirinin mekan puanlarından yararlandığı puanlama hizmetinin sunulması (m.5/2-c) ve meşru menfaat (m.5/2-f); kişi adı içermeden, gecikmeli ve ekip kurucusu tarafından kapatılabilir olarak.</li>
                 <li>Anonim popülerlik istatistiği ve topluluk mekan listesi: hizmetin geliştirilmesine yönelik meşru menfaat (m.5/2-f); kişiyi belirlemeye imkân vermeyecek şekilde ve kapatılabilir olarak.</li>
                 <li>Güvenlik, kötüye kullanımın önlenmesi, hizmetin iyileştirilmesi: meşru menfaat (m.5/2-f) ve hukuki yükümlülük (m.5/2-ç).</li>
             </ul>
 
             <h2>4. Kimlere aktarılır?</h2>
             <ul>
-                <li><b>Ekibin üyeleri:</b> Ekip içeriği yalnızca o ekibin üyelerine görünür.</li>
+                <li><b>Ekibin üyeleri:</b> Ziyaretler, katılanlar, puan kağıtları, notlar ve fotoğraflar yalnızca o ekibin üyelerine görünür.</li>
+                <li><b>Diğer kullanıcılar:</b> Yalnızca “Topluluk akışı” bölümünde sayılan sınırlı bilgi: mekan, gün, genel skor ve ekip adı ya da takma ad.</li>
                 <li><b>Herkese açık bağlantı:</b> Bir ziyaret için bağlantı oluşturursan, bağlantıyı alan herkes skoru ve kriterleri görür. Kişi adları, fotoğraflar ve notlar varsayılan olarak gizlidir.</li>
                 <li><b>Barındırma ve hesap (yurt dışı):</b> Veriler ve hesap bilgilerin (Netlify Identity) {LEGAL.hosting} sunucularında saklanır. Yurt dışına aktarım KVKK m.9 kapsamında standart sözleşme güvencesiyle yapılır.</li>
                 <li><b>Harita ve konum servisleri:</b> Harita karoları için OpenStreetMap; İstanbul dışındaki ya da listede olmayan mekanların araması için Photon (komoot), OpenStreetMap Nominatim ve Overpass hizmetlerine yalnızca ilgili özelliği kullandığında doğrudan cihazından istek gider.</li>
@@ -81,6 +95,7 @@ export function Privacy() {
                 <li>Ekip verileri, ekip kurucusu ekibi silene kadar saklanır. Silinen ziyaretler 30 gün sonra kalıcı olarak silinir.</li>
                 <li>Canlı masa puan kağıtları masa kapandıktan ya da 12 saat geçtikten sonra kullanılmaz ve temizlenir.</li>
                 <li>Hesap bilgilerin, hesabını silene kadar saklanır. Ayarlar → Hesabımı sil ile hesabın ve profilin kalıcı olarak silinir; ekiplerde adın “Silinmiş üye” olarak anonimleşir.</li>
+                <li>Topluluk kayıtları ziyaret ekipte durduğu sürece tutulur; ziyaret ya da ekip silinince veya görünüm kapatılınca kaldırılır.</li>
                 <li>Anonim popülerlik kayıtları 60 gün (ham) ve 90 gün (günlük özet) sonra silinir.</li>
                 <li>Cihazdaki veriler, Ayarlar’dan “Çıkış yap” ile ya da tarayıcı verilerini silerek kaldırılabilir.</li>
             </ul>
@@ -121,10 +136,12 @@ export function Terms() {
                 <li>Uygulamayı alkollü içki markası ya da işletme reklamı, kampanya veya promosyon amacıyla kullanma.</li>
                 <li>Davet bağlantılarını yalnızca güvendiğin kişilerle paylaş; bağlantıyı alan kişi ekibe katılabilir.</li>
                 <li>Topluluk listesine yalnızca gerçekten var olan mekanları, doğru adı ve konumuyla ekle. Yanıltıcı ya da reklam amaçlı kayıtlar kaldırılır.</li>
+                <li>Puanlar gerçek ziyaretlere ve kendi görüşünüze dayanmalı. Bir işletme adına, karşılık alarak ya da rakip bir işletmeyi kötülemek için puan verme; bu tür puanlar topluluktan kaldırılır.</li>
+                <li>Toplulukta ekip adıyla görünmeyi seçtiysen ekip adı başkalarının adını ya da kişisel bilgisini, hakaret, içki ya da marka adı içermemeli.</li>
             </ul>
             <p>Kurallara aykırı içerik bildirildiğinde ya da tespit edildiğinde kaldırılabilir. Bildirim için <ContactLink>İletişim ve başvuru formunda</ContactLink> “Hukuka aykırı içerik” konusunu seç; kişilik hakkı ihlali bildirimleri en geç 24 saat içinde yanıtlanır (5651 s. Kanun m.9).</p>
             <h2>7. Sorumluluk</h2>
-            <p>Puanlar ve yorumlar ekip üyelerinin kişisel görüşleridir. Hizmet “olduğu gibi” sunulur; kesintisiz ya da hatasız çalışacağı garanti edilmez. Önemli verilerini Ayarlar’dan düzenli olarak dışa aktarman önerilir.</p>
+            <p>Puanlar, topluluk puanları dahil, ekiplerin kişisel görüşleridir; Pub Skor bunları doğrulamaz ve işletmeler hakkında bir değerlendirme ya da tavsiye olarak sunmaz. Hizmet “olduğu gibi” sunulur; kesintisiz ya da hatasız çalışacağı garanti edilmez. Önemli verilerini Ayarlar’dan düzenli olarak dışa aktarman önerilir.</p>
             <h2>8. Değişiklikler ve uygulanacak hukuk</h2>
             <p>Bu koşullar güncellenebilir; önemli değişiklikler uygulama içinde duyurulur. Uyuşmazlıklarda Türkiye Cumhuriyeti hukuku uygulanır.</p>
             <h2>9. İletişim</h2>

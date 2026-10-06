@@ -11,7 +11,7 @@ export {
     History, House, Image, ImagePlus, Info, KeyRound, Link, ListOrdered, LocateFixed, Lock, LogOut, Map, MapPin, Medal, Megaphone,
     MessageCircle, Monitor, Moon, Navigation, NotebookPen, Pencil, Plus, QrCode, Radio, RefreshCw, Search, Settings, Share2,
     Shield, ShieldCheck, Shuffle, SlidersHorizontal, Smartphone, Sparkles, Split, Star, Sun, Swords, Tag, ThumbsDown, ThumbsUp,
-    Timer, Trash2, TrendingDown, TrendingUp, TriangleAlert, Trophy, Undo2, Upload, UserPlus, Users, Wallet, X, Zap
+    Timer, Trash2, TrendingDown, TrendingUp, TriangleAlert, Trophy, Undo2, Upload, UserPlus, Users, VenetianMask, Wallet, X, Zap
 } from 'lucide-preact';
 
 type Icon = typeof Beer;

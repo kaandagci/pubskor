@@ -9,6 +9,8 @@ import {
 import { HttpError, json, readJSON } from './http';
 import { indexCrew, requireProfile, unindexCrew } from './users';
 import { activity } from './routes-visits';
+import { publishCrew, unpublishCrew } from './public-feed';
+import { isPublicMode, publicModeOf, type PublicMode } from '../shared/public';
 
 const nameTaken = (crew: CrewDoc, name: string, exceptId?: string) =>
     crew.members.some(m => !m.removed && m.id !== exceptId && m.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'));
@@ -37,7 +39,8 @@ export async function createCrew(ctx: Ctx, req: Request) {
     };
     const crew: CrewDoc = {
         v: 1, id: newId.crew(), name: crewName, createdAt: now, updatedAt: now, rev: 1,
-        invite: secret(24), members: [member], venues: [], visits: [], tables: []
+        invite: secret(24), members: [member], venues: [], visits: [], tables: [],
+        publicMode: isPublicMode(b.publicMode) ? b.publicMode : 'anon'
     };
     const w = await ctx.kv.setJSON(crewKey(crew.id), crew, { onlyIfNew: true });
     if (!w.modified) throw new HttpError(409, 'Tekrar dene');
@@ -113,19 +116,23 @@ export async function withCrew<T>(ctx: Ctx, req: Request, fn: (crew: CrewDoc, me
 export async function updateCrew(ctx: Ctx, req: Request) {
     const b = await readJSON(req);
     const name = b.name !== undefined ? validCrewName(b.name) : null;
-    const share = typeof b.shareStats === 'boolean' ? b.shareStats : null;
+    if (b.publicMode !== undefined && !isPublicMode(b.publicMode)) throw new HttpError(400, 'Geçersiz görünüm');
     const r = await withCrew(ctx, req, (crew, me) => {
         requireOwner(me);
         if (name) crew.name = name;
-        const changed = share !== null && (crew.shareStats !== false) !== share;
-        if (share !== null) crew.shareStats = share;
-        return changed;
+        const before = publicModeOf(crew);
+        // Eski istemci: shareStats açık/kapalı
+        let next: PublicMode | null = isPublicMode(b.publicMode) ? b.publicMode : null;
+        if (!next && typeof b.shareStats === 'boolean') next = b.shareStats ? (before === 'off' ? 'anon' : before) : 'off';
+        if (next) { crew.publicMode = next; crew.shareStats = next !== 'off'; }
+        return { statsChanged: (before === 'off') !== (publicModeOf(crew) === 'off'), publicChanged: !!name || (next !== null && next !== before) };
     });
     // Katkı açılıp kapanınca son 60 günün anonim kayıtlarını ekiple eşitle
-    if (r.result) {
+    if (r.result.statsChanged) {
         const pairs = new Set(r.crew.visits.filter(v => !v.deletedAt).map(v => `${v.venueId}|${v.date}`));
         for (const pair of pairs) { const [venueId, date] = pair.split('|'); await activity(ctx, r.crew, venueId, date); }
     }
+    if (r.result.publicChanged) await publishCrew(ctx, r.crew);
     return json({ snapshot: r.snap() });
 }
 
@@ -225,6 +232,7 @@ export async function purgeCrew(ctx: Ctx, crew: CrewDoc) {
     const photoIds = crew.visits.flatMap(v => v.photos.map(p => p.id)).filter(id => id.startsWith('ph_'));
     const shareIds = crew.visits.map(v => v.shareId).filter((s): s is string => !!s);
     await ctx.kv.delete(crewKey(crew.id));
+    await unpublishCrew(ctx, crew);
     await Promise.allSettled([
         ...photoIds.map(id => ctx.kv.delete('photo/' + id)),
         ...shareIds.map(id => ctx.kv.delete('share/' + id)),

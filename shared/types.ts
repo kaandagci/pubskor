@@ -1,4 +1,5 @@
 import type { KindId, MetricId, VenueKind, VenueTag } from './metrics';
+import type { PublicMode } from './public';
 
 /** Bir kişinin bir ziyaretteki puan kağıdı. 1-10 puan; 0 = "yok / fikrim yok". */
 export type Sheet = Partial<Record<MetricId, number>>;
@@ -107,8 +108,14 @@ export interface CrewSnapshot {
     visits: Visit[];
     tables: TableRef[];
     legacyImported?: boolean;
-    /** Ekip anonim popülerlik istatistiğine katkı veriyor mu. */
+    /** Ekip anonim popülerlik istatistiğine katkı veriyor mu (topluluk görünümü kapalı değilse). */
     shareStats?: boolean;
+    /** Puanların toplulukta görünümü. */
+    publicMode?: PublicMode;
+    /** Ekibin topluluktaki takma adı. */
+    publicAlias?: string;
+    /** Ekip adı toplulukta gösterilebilir mi (hakaret, içki ya da marka adı içermiyor). */
+    publicNameOk?: boolean;
 }
 
 export interface VenueInput {

@@ -11,6 +11,7 @@ import { LIMITS, validateTags, validateVenueInput, validateVisitInput, type Clea
 import { authMember, loadCrew, requireOwner, safeEq, snapshot, type CrewDoc, type Ctx } from './crew';
 import { HttpError, json, readBinary, readJSON } from './http';
 import { syncCrewActivity } from './popular';
+import { publishCrew } from './public-feed';
 import { withCrew } from './routes-crew';
 
 /** Anonim popülerlik kaydını eşitler (ekip katkıyı kapattıysa geri alır). */
@@ -92,7 +93,10 @@ export async function createVisit(ctx: Ctx, req: Request) {
     const r0 = validateVisitInput(await readJSON(req));
     if (!r0.ok) throw new HttpError(400, r0.error);
     const r = await withCrew(ctx, req, (crew, me) => insertVisit(crew, r0.value, me.id, ctx.now()));
-    if (!r.result.duplicate) await activity(ctx, r.crew, r.result.visit.venueId, r.result.visit.date);
+    if (!r.result.duplicate) {
+        await activity(ctx, r.crew, r.result.visit.venueId, r.result.visit.date);
+        await publishCrew(ctx, r.crew);
+    }
     return json({ visitId: r.result.visit.id, duplicate: r.result.duplicate, snapshot: r.snap() }, r.result.duplicate ? 200 : 201);
 }
 
@@ -125,6 +129,7 @@ export async function updateVisit(ctx: Ctx, req: Request, p: Record<string, stri
     const old = before as { venueId: string; date: string } | null;
     if (old && (old.venueId !== r.result.venueId || old.date !== r.result.date)) await activity(ctx, r.crew, old.venueId, old.date);
     await activity(ctx, r.crew, r.result.venueId, r.result.date);
+    await publishCrew(ctx, r.crew);
     return json({ visitId: r.result.id, snapshot: r.snap() });
 }
 
@@ -139,6 +144,7 @@ export async function deleteVisit(ctx: Ctx, req: Request, p: Record<string, stri
     });
     if (r.result.sid) await ctx.kv.delete('share/' + r.result.sid);
     await activity(ctx, r.crew, r.result.venueId, r.result.date);
+    await publishCrew(ctx, r.crew);
     return json({ snapshot: r.snap() });
 }
 
@@ -151,6 +157,7 @@ export async function restoreVisit(ctx: Ctx, req: Request, p: Record<string, str
         return v;
     });
     await activity(ctx, r.crew, r.result.venueId, r.result.date);
+    await publishCrew(ctx, r.crew);
     return json({ snapshot: r.snap() });
 }
 
@@ -188,6 +195,7 @@ export async function updateVenue(ctx: Ctx, req: Request, p: Record<string, stri
         const dates = new Set(r.crew.visits.filter(v => v.venueId === p.id && !v.deletedAt).map(v => v.date));
         for (const d of dates) await activity(ctx, r.crew, p.id, d);
     }
+    if (b.placeId !== undefined) await publishCrew(ctx, r.crew);
     return json({ snapshot: r.snap() });
 }
 
@@ -233,6 +241,7 @@ export async function mergeVenue(ctx: Ctx, req: Request, p: Record<string, strin
         if (to.lat == null && from.lat != null) { to.lat = from.lat; to.lng = from.lng; }
         crew.venues = crew.venues.filter(x => x.id !== from.id);
     });
+    await publishCrew(ctx, r.crew);
     return json({ snapshot: r.snap() });
 }
 

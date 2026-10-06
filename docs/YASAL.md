@@ -27,6 +27,7 @@
 | Yalnızca içki mekanı önerme | Dikkat | Uygulama yalnızca alkol servis eden mekanları listeliyor. Bu bir mekan rehberi; ürün ya da marka tanıtımı yok. Yine de: içecek markası, fiyat kampanyası, "happy hour" ya da indirim duyurusu listelenmemeli; mekanlardan ücretli öne çıkarma alınmamalı; ifadeler nötr kalmalı ("çok gidilen", "en iyi içki" değil); 18+ kapısı korunmalı. Reklam açılmadan önce avukata sorulmalı. |
 | Mekan sitelerinin menü kontrolü | Düşük risk | Yalnızca mekanların kendi web siteleri ve bağlantı verdikleri menü sayfaları okunur. `robots.txt` engeline uyulur, kendini tanıtan bir tarayıcı adı (PubSkorBot) kullanılır, site başına bir ana sayfa ve en fazla iki menü sayfası okunur, sonuç 90 gün önbellekte tutulur, içerik saklanmaz (yalnızca "içki var / yok / bilinmiyor" kararı). Google Haritalar, Yemeksepeti ve sosyal medya hiç okunmaz; bunların koşulları otomatik veri toplamayı ve onlardan mekan veritabanı oluşturmayı yasaklar. |
 | Anonim popülerlik | Düşük risk | HMAC'lenmiş grup özetleri, en az 3 grup eşiği, 60/90 gün saklama, kurucu kapatabilir. Aydınlatma metninde ayrı bölüm. |
+| Topluluk akışı ve sıralaması | Düşük-orta risk (kişisel veri: yalnızca ekip adı seçilirse ve ad bir kişiyi belirliyorsa) | Herkese açık: kataloğa bağlı mekan, gün, genel skor, ekip adı ya da takma ad. Kişi adı, katılımcılar, puan kağıdı, içki verisi, not, fotoğraf, harcama, saat ve kimlikler çıkmaz. Varsayılan takma ad; "ekip adıyla" kurucunun seçimi. 3 saat gecikme (anlık konum ifşası yok). İçki/marka adı, hakaret ve iletişim bilgisi içeren ekip adları otomatik takma ada düşer (`shared/public.ts → publicNameOk`, 4250 m.6). Elle eklenen yerler paylaşılmaz. Kapatma/silme anında yansır. Sahte ya da ücretli puan yasağı koşullarda. |
 | Topluluk mekanları | 5651 kapsamında yer sağlayıcılık | Kullanıcılar mekan adı ve konumu ekleyebiliyor. Kişi başı günlük sınır var. İletişim formundan gelen yanıltıcı kayıt bildirimlerinde kayıt gizlenmeli (`places/community` belgesinde `hidden: true`). |
 
 ## 1. Alkol reklam ve tanıtım yasağı
@@ -62,6 +63,7 @@
 - Puanlar, notlar, fotoğraflar ve sipariş defteri
 - Mekan konumları; adla aramada yaklaşık konum (1 km, saklanmıyor)
 - Anonim popülerlik kayıtları (grup özeti + mekan + gün; kişi ya da ekip kimliği yok)
+- Topluluk kayıtları (`public/visits`: ekip özeti, mekan, gün, genel skor; ekip adı yalnızca "ekip adıyla" seçildiyse)
 - Barındırma sağlayıcısının teknik kayıtları (IP adresi)
 
 Telefon numarası toplanmıyor.

@@ -11,7 +11,9 @@ import { crewHighlights, isOwner, me, people, snapshot, venueById, visits } from
 import { confirmSheet, openSheet, toast, toastError } from '../state/ui';
 import { Avatar } from '../components/Avatar';
 import { AgreementMatrix, BiasBars } from '../components/charts';
-import { ChevronRight, Copy, RefreshCw, Settings, Share2, UserPlus } from '../components/icons';
+import { Check, ChevronRight, Copy, Link as LinkIcon, Plus, RefreshCw, Settings, Share2, UserPlus } from '../components/icons';
+import { activeCrewId, memberships, setActiveCrew } from '../state/session';
+import { CrewMark } from '../components/CrewMark';
 import { ScoreRing } from '../components/ScoreRing';
 import { Empty, Stat, TopBar } from '../components/ui';
 import { QR } from '../components/QR';
@@ -47,6 +49,47 @@ export function openInvite() {
     });
 }
 
+/** Ekip değiştirme sayfası: ekiplerin, yeni ekip kurma ve davetle katılma. */
+export function openCrewSwitcher() {
+    openSheet({
+        title: 'Ekiplerin',
+        render: close => (
+            <div>
+                <div class="menu">
+                    {memberships.value.map(m => (
+                        <button key={m.crewId} class="menu-item" onClick={() => { setActiveCrew(m.crewId); close(); }}>
+                            <CrewMark name={m.crewName} id={m.crewId} size={36} />
+                            <span class="grow truncate">{m.crewName}</span>
+                            {m.crewId === activeCrewId.value && <Check style={{ color: 'var(--tint-text)' }} />}
+                        </button>
+                    ))}
+                </div>
+                <div class="row mt-16" style={{ gap: '8px' }}>
+                    <a class="btn btn-primary grow" href="/ekip/kur" onClick={close}><Plus />Yeni ekip kur</a>
+                    <a class="btn btn-secondary grow" href="/katil" onClick={close}><LinkIcon />Davetle katıl</a>
+                </div>
+                <p class="hint mt-12">Birden fazla ekibin olabilir (iş, okul, mahalle…). Her ekibin puanları kendi içinde tutulur; diğer ekiplerin puanlarını Akış'taki “Herkes” sekmesinde görürsün.</p>
+            </div>
+        )
+    });
+}
+
+/** Ekipler arasında geçiş şeridi; sonunda her zaman "Yeni ekip" ve "Katıl". */
+function CrewStrip() {
+    return (
+        <div class="crew-strip" role="group" aria-label="Ekiplerin">
+            {memberships.value.map(m => (
+                <button key={m.crewId} class="crew-pill" aria-pressed={m.crewId === activeCrewId.value} onClick={() => setActiveCrew(m.crewId)}>
+                    <CrewMark name={m.crewName} id={m.crewId} size={26} />
+                    <span class="truncate">{m.crewName}</span>
+                </button>
+            ))}
+            <a class="crew-pill add" href="/ekip/kur"><Plus />Yeni ekip</a>
+            <a class="crew-pill" href="/katil"><LinkIcon />Katıl</a>
+        </div>
+    );
+}
+
 export function CrewPage() {
     const { query } = useLocation();
     const s = snapshot.value;
@@ -70,7 +113,8 @@ export function CrewPage() {
         <>
             <TopBar title="Ekip" actions={<a class="icon-btn" href="/ayarlar" aria-label="Ayarlar"><Settings /></a>} />
             <main class="page">
-                <div class="card card-pad-lg">
+                <CrewStrip />
+                <div class="card card-pad-lg mt-12">
                     <div class="row between" style={{ alignItems: 'flex-start' }}>
                         <div style={{ minWidth: 0 }}>
                             <h1 class="display" style={{ fontSize: '28px' }}>{s.name}</h1>
